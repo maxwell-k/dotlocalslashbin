@@ -1,0 +1,7 @@
+[flake8]
+max-line-length = 88
+extend-ignore = E203
+
+# .flake8
+# SPDX-FileCopyrightText: 2024 Keith Maxwell <keith.maxwell@gmail.com>
+# SPDX-License-Identifier: CC0-1.0
