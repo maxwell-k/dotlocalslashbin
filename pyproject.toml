@@ -22,9 +22,11 @@ dotlocalslashbin = "dotlocalslashbin:main"
 [project.optional-dependencies]
 test = [
   "black",
+  "codespell",
   "flake8",
   "flit",
   "nox",
+  "usort",
 ]
 
 # pyproject.toml

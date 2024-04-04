@@ -50,6 +50,22 @@ def check(session) -> None:
     session.run("twine", "check", "--strict", *DIST.glob("*.*"))
 
 
+@nox.session(python=PRIMARY)
+def static(session) -> None:
+    """Run static analysis: usort, black and flake8"""
+    session.install("usort")
+    session.run("usort", "check", "src", "noxfile.py")
+
+    session.install("black")
+    session.run("black", "--check", ".")
+
+    session.install("flake8")
+    session.run("flake8")
+
+    session.install("codespell")
+    session.run("codespell")
+
+
 # noxfile.py
 # Copyright 2024 Keith Maxwell
 # SPDX-License-Identifier: MPL-2.0

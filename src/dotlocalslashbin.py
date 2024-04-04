@@ -4,9 +4,11 @@
 # SPDX-License-Identifier: MPL-2.0
 """Download and extract files to ~/.local/bin/"""
 import tarfile
-from argparse import ArgumentDefaultsHelpFormatter as formatter_class
-from argparse import ArgumentParser
-from argparse import Namespace
+from argparse import (
+    ArgumentDefaultsHelpFormatter as formatter_class,
+    ArgumentParser,
+    Namespace,
+)
 from collections.abc import Generator
 from contextlib import contextmanager
 from hashlib import file_digest
