@@ -16,7 +16,7 @@ def dev(session) -> None:
     """Set up a development environment (virtual environment)"""
     rmtree(VIRTUAL_ENVIRONMENT, ignore_errors=True)
     session.run(f"python{PRIMARY}", "-m", "venv", "--upgrade-deps", VIRTUAL_ENVIRONMENT)
-    session.run(PYTHON, "-m", "pip", "install", ".[test]")
+    session.run(PYTHON, "-m", "pip", "install", "--editable", ".[test]")
 
 
 @nox.session(python=PRIMARY)
