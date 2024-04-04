@@ -55,7 +55,7 @@ def _download(
         target = cast(str, args.output) + name
 
     if url.startswith("https://"):
-        downloaded = Path(args.downloaded) / url.rsplit("/", 1)[1]
+        downloaded = Path(args.downloaded).expanduser() / url.rsplit("/", 1)[1]
         downloaded.parent.mkdir(parents=True, exist_ok=True)
         if not downloaded.is_file():
             with urlopen(url) as fp, downloaded.open("wb") as dp:
@@ -145,7 +145,9 @@ def main() -> int:
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument("--input", default="bin.toml", help="TOML specification")
     parser.add_argument("--output", default="~/.local/bin/", help="Target directory")
-    parser.add_argument("--downloaded", default="downloaded", help="Download directory")
+    parser.add_argument(
+        "--downloaded", default="~/.cache/dotlocalslashbin/", help="Download directory"
+    )
     parser.add_argument(
         "--completions",
         default="~/.local/share/zsh/site-functions/",
