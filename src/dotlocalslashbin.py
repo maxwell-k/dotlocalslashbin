@@ -134,9 +134,9 @@ def _download(
             run(split(completions.format(**kwargs)), check=True, stdout=file)
 
     if version is None:
-        print(f"# {target}")
+        print(f"# {target_path}")
     else:
-        print(f"$ {target} {version}")
+        print(f"$ {target_path} {version}")
         run([target_path, version], check=True)
 
     print()
