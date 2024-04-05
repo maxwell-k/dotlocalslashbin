@@ -98,6 +98,7 @@ def _download(
         else:
             action = "copy"
 
+    message = ("#" if version else "$") + f" {target} " + (version or "")
     target = target.expanduser()
     target.parent.mkdir(parents=True, exist_ok=True)
     target.unlink(missing_ok=True)
@@ -132,10 +133,8 @@ def _download(
         with output.open("w") as file:
             run(split(completions.format(**kwargs)), check=True, stdout=file)
 
-    if version is None:
-        print(f"# {target}")
-    else:
-        print(f"$ {target} {version}")
+    print(message)
+    if version:
         run([target, version], check=True)
 
     print()
