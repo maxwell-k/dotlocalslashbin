@@ -55,7 +55,6 @@ def _download(
     if target is None:
         target = args.output.joinpath(name)
     assert target is not None
-    target = target.expanduser()
 
     if url.startswith("https://"):
         downloaded = Path(args.downloaded).expanduser() / url.rsplit("/", 1)[1]
@@ -87,9 +86,6 @@ def _download(
     else:
         downloaded = Path(url)
 
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.unlink(missing_ok=True)
-
     if action is None:
         if url.endswith(".tar.gz"):
             action = "untar"
@@ -102,6 +98,9 @@ def _download(
         else:
             action = "copy"
 
+    target = target.expanduser()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.unlink(missing_ok=True)
     if action == "copy":
         copy(downloaded, target)
     elif action == "symlink":
