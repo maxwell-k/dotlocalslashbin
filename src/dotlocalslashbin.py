@@ -157,7 +157,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    with open(args.input, "rb") as file:
+    with Path(args.input).expanduser().open("rb") as file:
         data = load(file)
 
     for name, kwargs in data.items():
