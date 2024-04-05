@@ -18,7 +18,6 @@ from shutil import copy
 from stat import S_IEXEC
 from subprocess import run
 from tomllib import load
-from typing import cast
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -32,8 +31,8 @@ def _download(
     *,
     name: str,
     url: str,
+    target: Path | None = None,
     action: str | None = None,
-    target: str | None = None,
     expected: str | None = None,
     version: str | None = None,
     prefix: str | None = None,
@@ -54,8 +53,9 @@ def _download(
         command: command to run to install after download
     """
     if target is None:
-        target = cast(str, args.output) + name
-    target_path = Path(target).expanduser()
+        target = args.output.joinpath(name)
+    assert target is not None
+    target = target.expanduser()
 
     if url.startswith("https://"):
         downloaded = Path(args.downloaded).expanduser() / url.rsplit("/", 1)[1]
@@ -87,8 +87,8 @@ def _download(
     else:
         downloaded = Path(url)
 
-    target_path.parent.mkdir(parents=True, exist_ok=True)
-    target_path.unlink(missing_ok=True)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.unlink(missing_ok=True)
 
     if action is None:
         if url.endswith(".tar.gz"):
@@ -103,12 +103,12 @@ def _download(
             action = "copy"
 
     if action == "copy":
-        copy(downloaded, target_path)
+        copy(downloaded, target)
     elif action == "symlink":
-        target_path.symlink_to(downloaded)
+        target.symlink_to(downloaded)
     elif action == "unzip":
         with ZipFile(downloaded, "r") as file:
-            file.extract(target_path.name, path=target_path.parent)
+            file.extract(target.name, path=target.parent)
     elif action == "untar":
         with tarfile.open(downloaded, "r") as file:
             for member in file.getmembers():
@@ -116,28 +116,28 @@ def _download(
                     member.path = member.path.removeprefix(prefix)
                 if member.path in ignore:
                     continue
-                file.extract(member, path=target_path.parent)
+                file.extract(member, path=target.parent)
     elif action == "command" and command is not None:
-        kwargs = dict(target=target_path, downloaded=downloaded)
+        kwargs = dict(target=target, downloaded=downloaded)
         run(split(command.format(**kwargs)), check=True)
 
-    yield downloaded, target_path
+    yield downloaded, target
 
-    if not target_path.is_symlink():
-        target_path.chmod(target_path.stat().st_mode | S_IEXEC)
+    if not target.is_symlink():
+        target.chmod(target.stat().st_mode | S_IEXEC)
 
     if completions:
-        output = Path(args.completions).expanduser() / f"_{target_path.name}"
+        output = Path(args.completions).expanduser() / f"_{target.name}"
         output.parent.mkdir(parents=True, exist_ok=True)
-        kwargs = dict(target=target_path)  # target may not be on PATH
+        kwargs = dict(target=target)  # target may not be on PATH
         with output.open("w") as file:
             run(split(completions.format(**kwargs)), check=True, stdout=file)
 
     if version is None:
-        print(f"# {target_path}")
+        print(f"# {target}")
     else:
-        print(f"$ {target_path} {version}")
-        run([target_path, version], check=True)
+        print(f"$ {target} {version}")
+        run([target, version], check=True)
 
     print()
 
@@ -146,9 +146,9 @@ def main() -> int:
     parser = ArgumentParser(prog=Path(__file__).name, formatter_class=formatter_class)
     parser.add_argument("--version", action="version", version=__version__)
     help_ = "TOML specification"
-    parser.add_argument("--input", default="bin.toml", help=help_)
+    parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
     help_ = "Target directory"
-    parser.add_argument("--output", default="~/.local/bin/", help=help_)
+    parser.add_argument("--output", default="~/.local/bin/", help=help_, type=Path)
     help_ = "Download directory"
     default = "~/.cache/dotlocalslashbin/"
     parser.add_argument("--downloaded", default=default, help=help_)
@@ -157,11 +157,13 @@ def main() -> int:
     parser.add_argument("--completions", default=default, help=help_)
     args = parser.parse_args()
 
-    with Path(args.input).expanduser().open("rb") as file:
+    with args.input.expanduser().open("rb") as file:
         data = load(file)
 
     for name, kwargs in data.items():
         kwargs["name"] = name
+        if "target" in kwargs:
+            kwargs["target"] = Path(kwargs["target"])
         with _download(args, **kwargs) as (downloaded, target):
             pass
 
