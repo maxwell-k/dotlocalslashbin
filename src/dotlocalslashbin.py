@@ -55,6 +55,7 @@ def _download(
     """
     if target is None:
         target = cast(str, args.output) + name
+    target_path = Path(target).expanduser()
 
     if url.startswith("https://"):
         downloaded = Path(args.downloaded).expanduser() / url.rsplit("/", 1)[1]
@@ -86,7 +87,6 @@ def _download(
     else:
         downloaded = Path(url)
 
-    target_path = Path(target).expanduser()
     target_path.parent.mkdir(parents=True, exist_ok=True)
     target_path.unlink(missing_ok=True)
 
@@ -145,16 +145,16 @@ def _download(
 def main() -> int:
     parser = ArgumentParser(prog=Path(__file__).name, formatter_class=formatter_class)
     parser.add_argument("--version", action="version", version=__version__)
-    parser.add_argument("--input", default="bin.toml", help="TOML specification")
-    parser.add_argument("--output", default="~/.local/bin/", help="Target directory")
-    parser.add_argument(
-        "--downloaded", default="~/.cache/dotlocalslashbin/", help="Download directory"
-    )
-    parser.add_argument(
-        "--completions",
-        default="~/.local/share/zsh/site-functions/",
-        help="Directory for ZSH completions",
-    )
+    help_ = "TOML specification"
+    parser.add_argument("--input", default="bin.toml", help=help_)
+    help_ = "Target directory"
+    parser.add_argument("--output", default="~/.local/bin/", help=help_)
+    help_ = "Download directory"
+    default = "~/.cache/dotlocalslashbin/"
+    parser.add_argument("--downloaded", default=default, help=help_)
+    help_ = "Directory for ZSH completions"
+    default = "~/.local/share/zsh/site-functions/"
+    parser.add_argument("--completions", default=default, help=help_)
     args = parser.parse_args()
 
     with Path(args.input).expanduser().open("rb") as file:
