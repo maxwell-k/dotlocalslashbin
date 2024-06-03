@@ -23,7 +23,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 
 class CustomNamespace(Namespace):
