@@ -18,6 +18,7 @@ from shutil import copy
 from stat import S_IEXEC
 from subprocess import run
 from tomllib import load
+from urllib.error import HTTPError
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -162,8 +163,12 @@ def main() -> int:
         kwargs["name"] = name
         if "target" in kwargs:
             kwargs["target"] = Path(kwargs["target"])
-        with _download(args, **kwargs) as (downloaded, target):
-            pass
+        try:
+            with _download(args, **kwargs) as (downloaded, target):
+                pass
+        except HTTPError as e:
+            print(f"Error {e.code} downloading {e.url}")
+            return 1
 
     return 0
 
