@@ -26,9 +26,32 @@ from zipfile import ZipFile
 __version__ = "0.0.3"
 
 
+class CustomNamespace(Namespace):
+    output: Path
+    input: Path
+    downloaded: Path
+    completions: Path
+
+
+def parse_args():
+    parser = ArgumentParser(prog=Path(__file__).name, formatter_class=formatter_class)
+    parser.add_argument("--version", action="version", version=__version__)
+    help_ = "TOML specification"
+    parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
+    help_ = "Target directory"
+    parser.add_argument("--output", default="~/.local/bin/", help=help_, type=Path)
+    help_ = "Download directory"
+    default = "~/.cache/dotlocalslashbin/"
+    parser.add_argument("--downloaded", default=default, help=help_, type=Path)
+    help_ = "Directory for ZSH completions"
+    default = "~/.local/share/zsh/site-functions/"
+    parser.add_argument("--completions", default=default, help=help_, type=Path)
+    return parser.parse_args(namespace=CustomNamespace)
+
+
 @contextmanager
 def _download(
-    args: Namespace,
+    args: type[CustomNamespace],
     *,
     name: str,
     url: str,
@@ -58,7 +81,7 @@ def _download(
     assert target is not None
 
     if url.startswith("https://"):
-        downloaded = Path(args.downloaded).expanduser() / url.rsplit("/", 1)[1]
+        downloaded = args.downloaded.expanduser() / url.rsplit("/", 1)[1]
         downloaded.parent.mkdir(parents=True, exist_ok=True)
         if not downloaded.is_file():
             with urlopen(url) as fp, downloaded.open("wb") as dp:
@@ -128,7 +151,7 @@ def _download(
         target.chmod(target.stat().st_mode | S_IEXEC)
 
     if completions:
-        output = Path(args.completions).expanduser() / f"_{target.name}"
+        output = args.completions.expanduser() / f"_{target.name}"
         output.parent.mkdir(parents=True, exist_ok=True)
         kwargs = dict(target=target)  # target may not be on PATH
         with output.open("w") as file:
@@ -142,19 +165,7 @@ def _download(
 
 
 def main() -> int:
-    parser = ArgumentParser(prog=Path(__file__).name, formatter_class=formatter_class)
-    parser.add_argument("--version", action="version", version=__version__)
-    help_ = "TOML specification"
-    parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
-    help_ = "Target directory"
-    parser.add_argument("--output", default="~/.local/bin/", help=help_, type=Path)
-    help_ = "Download directory"
-    default = "~/.cache/dotlocalslashbin/"
-    parser.add_argument("--downloaded", default=default, help=help_)
-    help_ = "Directory for ZSH completions"
-    default = "~/.local/share/zsh/site-functions/"
-    parser.add_argument("--completions", default=default, help=help_)
-    args = parser.parse_args()
+    args = parse_args()
 
     with args.input.expanduser().open("rb") as file:
         data = load(file)
