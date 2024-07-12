@@ -140,7 +140,7 @@ def _download(
                     member.path = member.path.removeprefix(prefix)
                 if member.path in ignore:
                     continue
-                file.extract(member, path=target.parent)
+                file.extract(member, path=target.parent, filter="tar")
     elif action == "command" and command is not None:
         kwargs = dict(target=target, downloaded=downloaded)
         run(split(command.format(**kwargs)), check=True)
