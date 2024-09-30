@@ -23,7 +23,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 
 
 class CustomNamespace(Namespace):
@@ -111,7 +111,7 @@ def _download(
         downloaded = Path(url)
 
     if action is None:
-        if url.endswith(".tar.gz"):
+        if url.endswith(".tar.gz") or url.endswith(".tar"):
             action = "untar"
         elif url.endswith(".zip"):
             action = "unzip"
