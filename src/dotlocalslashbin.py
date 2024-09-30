@@ -111,7 +111,7 @@ def _download(
         downloaded = Path(url)
 
     if action is None:
-        if url.endswith(".tar.gz"):
+        if url.endswith(".tar.gz") or url.endswith(".tar"):
             action = "untar"
         elif url.endswith(".zip"):
             action = "unzip"
