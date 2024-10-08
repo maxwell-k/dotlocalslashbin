@@ -3,7 +3,7 @@ from shutil import rmtree
 
 import nox
 
-PRIMARY = "3.11"
+PRIMARY = "3.12"
 VIRTUAL_ENVIRONMENT = ".venv"
 CWD = Path(".").absolute()
 PYTHON = CWD / VIRTUAL_ENVIRONMENT / "bin" / "python"
