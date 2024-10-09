@@ -24,7 +24,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.7"
+__version__ = "0.0.8"
 
 DEFAULT_OUTPUT = "~/.local/bin/"
 
