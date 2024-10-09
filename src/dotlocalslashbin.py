@@ -11,6 +11,7 @@ from argparse import (
 )
 from collections.abc import Generator
 from contextlib import contextmanager
+from enum import Enum
 from hashlib import file_digest
 from pathlib import Path
 from shlex import split
@@ -34,6 +35,9 @@ class CustomNamespace(Namespace):
     downloaded: Path
 
 
+Action = Enum("Action", ["command", "copy", "symlink", "untar", "unzip"])
+
+
 def parse_args():
     parser = ArgumentParser(prog=Path(__file__).name, formatter_class=formatter_class)
     parser.add_argument("--version", action="version", version=__version__)
@@ -54,7 +58,7 @@ def _download(
     name: str,
     url: str,
     target: Path | None = None,
-    action: str | None = None,
+    action: Action | None = None,
     expected: str | None = None,
     version: str | None = None,
     prefix: str | None = None,
@@ -110,28 +114,28 @@ def _download(
 
     if action is None:
         if url.endswith(".tar.gz") or url.endswith(".tar"):
-            action = "untar"
+            action = Action.untar
         elif url.endswith(".zip"):
-            action = "unzip"
+            action = Action.unzip
         elif url.startswith("/"):
-            action = "symlink"
+            action = Action.symlink
         elif command:
-            action = "command"
+            action = Action.command
         else:
-            action = "copy"
+            action = Action.copy
 
     message = ("#" if version else "$") + f" {target} " + (version or "")
     target = target.expanduser()
     target.parent.mkdir(parents=True, exist_ok=True)
     target.unlink(missing_ok=True)
-    if action == "copy":
+    if action == Action.copy:
         copy(downloaded, target)
-    elif action == "symlink":
+    elif action == Action.symlink:
         target.symlink_to(downloaded)
-    elif action == "unzip":
+    elif action == Action.unzip:
         with ZipFile(downloaded, "r") as file:
             file.extract(target.name, path=target.parent)
-    elif action == "untar":
+    elif action == Action.untar:
         with tarfile.open(downloaded, "r") as file:
             for member in file.getmembers():
                 if prefix:
@@ -143,7 +147,7 @@ def _download(
                 except TypeError:  # before 3.11.4 e.g. Debian 12
                     file.extract(member, path=target.parent)
 
-    elif action == "command" and command is not None:
+    elif action == Action.command and command is not None:
         kwargs = dict(target=target, downloaded=downloaded)
         run(split(command.format(**kwargs)), check=True)
 
@@ -169,6 +173,8 @@ def main() -> int:
         kwargs["name"] = name
         if "target" in kwargs:
             kwargs["target"] = Path(kwargs["target"])
+        if "action" in kwargs:
+            kwargs["action"] = getattr(Action, kwargs["action"])
         try:
             with _download(args, **kwargs) as (downloaded, target):
                 pass
