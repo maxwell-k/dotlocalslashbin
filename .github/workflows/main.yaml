@@ -10,24 +10,7 @@ on: # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 jobs:
-  nox:
-    runs-on: ubuntu-latest
-    outputs: { version: "${{ steps.version.outputs.version }}" }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-        id: setup
-      # use pipx below —  it is available in the ubuntu-latest image —  uv isn't
-      # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md
-      - run: pipx run "--python=${{ steps.setup.outputs.python-path }}" nox
-      - run: >-
-          pipx run "--python=${{ steps.setup.outputs.python-path }}"
-          nox --session=github_output >> "$GITHUB_OUTPUT"
-        id: version
-      - uses: actions/upload-artifact@v4
-        with: { path: dist }
-      - uses: dprint/check@v2.2
+  nox: { uses: ./.github/workflows/nox.yaml }
   publish:
     needs: [nox]
     runs-on: ubuntu-latest
