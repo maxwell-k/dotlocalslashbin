@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
     help_ = "Target directory"
     parser.add_argument("--output", default="~/.local/bin/", help=help_, type=Path)
-    help_ = "Download directory"
+    help_ = "Output directory"
     default = "~/.cache/dotlocalslashbin/"
     parser.add_argument("--downloaded", default=default, help=help_, type=Path)
     help_ = "Directory for ZSH completions"
