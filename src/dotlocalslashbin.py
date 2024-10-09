@@ -25,6 +25,8 @@ from zipfile import ZipFile
 
 __version__ = "0.0.7"
 
+DEFAULT_OUTPUT = "~/.local/bin/"
+
 
 class CustomNamespace(Namespace):
     output: Path
@@ -39,7 +41,7 @@ def parse_args():
     help_ = "TOML specification"
     parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
     help_ = "Target directory"
-    parser.add_argument("--output", default="~/.local/bin/", help=help_, type=Path)
+    parser.add_argument("--output", default=DEFAULT_OUTPUT, help=help_, type=Path)
     help_ = "Output directory"
     default = "~/.cache/dotlocalslashbin/"
     parser.add_argument("--downloaded", default=default, help=help_, type=Path)
@@ -79,6 +81,8 @@ def _download(
     if target is None:
         target = args.output.joinpath(name)
     assert target is not None
+    if args.output != DEFAULT_OUTPUT:
+        target = target.absolute()
 
     if url.startswith("https://"):
         downloaded = args.downloaded.expanduser() / url.rsplit("/", 1)[1]
