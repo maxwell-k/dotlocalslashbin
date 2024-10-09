@@ -2,15 +2,12 @@
 # src/dotlocalslashbin.py
 # Copyright 2022 Keith Maxwell
 # SPDX-License-Identifier: MPL-2.0
-"""Download and extract files to ~/.local/bin/"""
+"""Download and extract files to `~/.local/bin/`."""
 import tarfile
-from argparse import (
-    ArgumentDefaultsHelpFormatter as formatter_class,
-    ArgumentParser,
-    Namespace,
-)
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from collections.abc import Generator
 from contextlib import contextmanager
+from enum import Enum
 from hashlib import file_digest
 from pathlib import Path
 from shlex import split
@@ -23,117 +20,126 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.7"
+__version__ = "0.0.8"
+
+DEFAULT_OUTPUT = "~/.local/bin/"
+_SHA512_LENGTH = 128
 
 
-class CustomNamespace(Namespace):
+class _CustomNamespace(Namespace):
     output: Path
     input: Path
     downloaded: Path
-    completions: Path
 
 
-def parse_args():
-    parser = ArgumentParser(prog=Path(__file__).name, formatter_class=formatter_class)
+Action = Enum("Action", ["command", "copy", "symlink", "untar", "unzip"])
+
+
+def _parse_args() -> _CustomNamespace:
+    parser = ArgumentParser(
+        prog=Path(__file__).name,
+        formatter_class=ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument("--version", action="version", version=__version__)
     help_ = "TOML specification"
     parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
     help_ = "Target directory"
-    parser.add_argument("--output", default="~/.local/bin/", help=help_, type=Path)
-    help_ = "Download directory"
+    parser.add_argument("--output", default=DEFAULT_OUTPUT, help=help_, type=Path)
+    help_ = "Output directory"
     default = "~/.cache/dotlocalslashbin/"
     parser.add_argument("--downloaded", default=default, help=help_, type=Path)
-    help_ = "Directory for ZSH completions"
-    default = "~/.local/share/zsh/site-functions/"
-    parser.add_argument("--completions", default=default, help=help_, type=Path)
-    return parser.parse_args(namespace=CustomNamespace)
+    return parser.parse_args(namespace=_CustomNamespace())
 
 
 @contextmanager
-def _download(
-    args: type[CustomNamespace],
+def _process(
+    args: _CustomNamespace,
     *,
     name: str,
     url: str,
     target: Path | None = None,
-    action: str | None = None,
+    action: Action | None = None,
     expected: str | None = None,
     version: str | None = None,
     prefix: str | None = None,
-    completions: str | None = None,
     command: str | None = None,
-    ignore: set = set(),
+    ignore: set | None = None,
 ) -> Generator[tuple[Path, Path], None, None]:
-    """Context manager to download and install a program
+    """Context manager to download and install a program.
 
     Arguments:
+        args: the parsed command line arguments
+        name: the name of the target "file"
         url: the URL to download
         action: action to take to install for example copy
         target: the destination
         expected: the SHA256 or SHA512 hex-digest of the file at URL
         version: an argument to display the version for example --version
         prefix: to remove when untarring
-        completions: whether to generate ZSH completions
         command: command to run to install after download
+        ignore: a set of files to ignore when extracting
+
     """
+    if ignore is None:
+        ignore = set()
     if target is None:
         target = args.output.joinpath(name)
-    assert target is not None
+    if args.output != DEFAULT_OUTPUT:
+        target = target.absolute()
 
     if url.startswith("https://"):
         downloaded = args.downloaded.expanduser() / url.rsplit("/", 1)[1]
-        downloaded.parent.mkdir(parents=True, exist_ok=True)
-        if not downloaded.is_file():
-            with urlopen(url) as fp, downloaded.open("wb") as dp:
-                if "content-length" in fp.headers:
-                    size = int(fp.headers["Content-Length"])
-                else:
-                    size = -1
-
-                print(f"Downloading {name}…")
-                written = dp.write(fp.read())
-
-            if size >= 0 and written != size:
-                raise RuntimeError("Wrong content length")
-
-        if expected:
-            digest = "sha256"
-            if len(expected) == 128:
-                digest = "sha512"
-            with downloaded.open("rb") as f:
-                digest = file_digest(f, digest)
-
-            if (actual := digest.hexdigest()) != expected:
-                raise RuntimeError(
-                    f"Unexpected digest for {downloaded}: {actual=} {expected=}"
-                )
     else:
         downloaded = Path(url)
 
+    if not downloaded.is_file() and url.startswith("https://"):
+        downloaded.parent.mkdir(parents=True, exist_ok=True)
+        with urlopen(url) as fp, downloaded.open("wb") as dp:
+            if "content-length" in fp.headers:
+                size = int(fp.headers["Content-Length"])
+            else:
+                size = -1
+
+            print(f"Downloading {name}…")
+            written = dp.write(fp.read())
+
+        if size >= 0 and written != size:
+            msg = "Wrong content length"
+            raise RuntimeError(msg)
+
+    if expected:
+        with downloaded.open("rb") as f:
+            _digest = "sha512" if len(expected) == _SHA512_LENGTH else "sha256"
+            digest = file_digest(f, _digest)
+
+        if (actual := digest.hexdigest()) != expected:
+            msg = f"Unexpected digest for {downloaded}: {actual=} {expected=}"
+            raise RuntimeError(msg)
+
     if action is None:
-        if url.endswith(".tar.gz") or url.endswith(".tar"):
-            action = "untar"
+        if url.endswith((".tar.gz", ".tar")):
+            action = Action.untar
         elif url.endswith(".zip"):
-            action = "unzip"
+            action = Action.unzip
         elif url.startswith("/"):
-            action = "symlink"
+            action = Action.symlink
         elif command:
-            action = "command"
+            action = Action.command
         else:
-            action = "copy"
+            action = Action.copy
 
     message = ("#" if version else "$") + f" {target} " + (version or "")
     target = target.expanduser()
     target.parent.mkdir(parents=True, exist_ok=True)
     target.unlink(missing_ok=True)
-    if action == "copy":
+    if action == Action.copy:
         copy(downloaded, target)
-    elif action == "symlink":
+    elif action == Action.symlink:
         target.symlink_to(downloaded)
-    elif action == "unzip":
+    elif action == Action.unzip:
         with ZipFile(downloaded, "r") as file:
             file.extract(target.name, path=target.parent)
-    elif action == "untar":
+    elif action == Action.untar:
         with tarfile.open(downloaded, "r") as file:
             for member in file.getmembers():
                 if prefix:
@@ -145,21 +151,14 @@ def _download(
                 except TypeError:  # before 3.11.4 e.g. Debian 12
                     file.extract(member, path=target.parent)
 
-    elif action == "command" and command is not None:
-        kwargs = dict(target=target, downloaded=downloaded)
+    elif action == Action.command and command is not None:
+        kwargs = {"target": target, "downloaded": downloaded}
         run(split(command.format(**kwargs)), check=True)
 
     yield downloaded, target
 
     if not target.is_symlink():
         target.chmod(target.stat().st_mode | S_IEXEC)
-
-    if completions:
-        output = args.completions.expanduser() / f"_{target.name}"
-        output.parent.mkdir(parents=True, exist_ok=True)
-        kwargs = dict(target=target)  # target may not be on PATH
-        with output.open("w") as file:
-            run(split(completions.format(**kwargs)), check=True, stdout=file)
 
     print(message)
     if version:
@@ -169,7 +168,8 @@ def _download(
 
 
 def main() -> int:
-    args = parse_args()
+    """Parse command line arguments and download each file."""
+    args = _parse_args()
 
     with args.input.expanduser().open("rb") as file:
         data = load(file)
@@ -178,8 +178,10 @@ def main() -> int:
         kwargs["name"] = name
         if "target" in kwargs:
             kwargs["target"] = Path(kwargs["target"])
+        if "action" in kwargs:
+            kwargs["action"] = getattr(Action, kwargs["action"])
         try:
-            with _download(args, **kwargs) as (downloaded, target):
+            with _process(args, **kwargs) as (downloaded, target):
                 pass
         except HTTPError as e:
             print(f"Error {e.code} downloading {e.url}")
