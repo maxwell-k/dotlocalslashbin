@@ -2,15 +2,10 @@
 # src/dotlocalslashbin.py
 # Copyright 2022 Keith Maxwell
 # SPDX-License-Identifier: MPL-2.0
-"""Download and extract files to ~/.local/bin/"""
+"""Download and extract files to `~/.local/bin/`."""
 import tarfile
-from argparse import (
-    ArgumentDefaultsHelpFormatter as formatter_class,
-    ArgumentParser,
-    Namespace,
-)
-from collections.abc import Generator
-from contextlib import contextmanager
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
+from dataclasses import dataclass
 from enum import Enum
 from hashlib import file_digest
 from pathlib import Path
@@ -26,10 +21,11 @@ from zipfile import ZipFile
 
 __version__ = "0.0.7"
 
-DEFAULT_OUTPUT = "~/.local/bin/"
+DEFAULT_OUTPUT = Path("~/.local/bin/")
+_SHA512_LENGTH = 128
 
 
-class CustomNamespace(Namespace):
+class _CustomNamespace(Namespace):
     output: Path
     input: Path
     downloaded: Path
@@ -38,8 +34,104 @@ class CustomNamespace(Namespace):
 Action = Enum("Action", ["command", "copy", "symlink", "untar", "unzip"])
 
 
-def parse_args():
-    parser = ArgumentParser(prog=Path(__file__).name, formatter_class=formatter_class)
+@dataclass(init=False)
+class Item:
+    """Class for an application."""
+
+    name: str
+    url: str
+    target: Path
+    action: Action
+    downloaded: Path
+    expected: str | None
+    version: str | None
+    prefix: str
+    command: str | None
+    ignore: set
+
+
+def main() -> int:
+    """Parse command line arguments and download each file."""
+    args = _parse_args()
+
+    with args.input.expanduser().open("rb") as file:
+        data = load(file)
+
+    for name, record in data.items():
+        item = Item()
+        item.name = name
+        item.url = record["url"]
+        default = args.output.joinpath(name)
+        item.target = Path(record.get("target", default)).expanduser()
+        item.ignore = record.get("ignore", set())
+        item.expected = record.get("expected", None)
+        item.version = record.get("version", None)
+        item.prefix = record.get("prefix", "")
+        item.command = record.get("command", None)
+
+        if "action" in record:
+            item.action = getattr(Action, record["action"])
+        else:
+            item.action = _guess_action(item)
+
+        if item.url.startswith("https://"):
+            item.downloaded = args.downloaded.expanduser() / item.url.rsplit("/", 1)[1]
+        else:
+            item.downloaded = Path(item.url)
+        try:
+            _process(item)
+        except HTTPError as e:
+            print(f"Error {e.code} downloading {e.url}")
+            return 1
+
+        arg0 = item.name if args.output == DEFAULT_OUTPUT else str(item.target)
+        message = ("# " if item.version else "$ ") + arg0 + (item.version or "")
+        print(message)
+        if item.version:
+            run([arg0, item.version], check=True)
+        print()
+
+    return 0
+
+
+def _process(item: Item) -> None:
+    """Context manager to download and install a program."""
+    if not item.downloaded.is_file() and item.url.startswith("https://"):
+        _download(item)
+
+    if item.expected:
+        with item.downloaded.open("rb") as f:
+            _digest = "sha512" if len(item.expected) == _SHA512_LENGTH else "sha256"
+            digest = file_digest(f, _digest)
+
+        if (actual := digest.hexdigest()) != item.expected:
+            msg = f"Unexpected digest for {item.downloaded}: {actual=} {item.expected=}"
+            raise RuntimeError(msg)
+
+    item.target.parent.mkdir(parents=True, exist_ok=True)
+    item.target.unlink(missing_ok=True)
+    if item.action == Action.copy:
+        copy(item.downloaded, item.target)
+    elif item.action == Action.symlink:
+        item.target.symlink_to(item.downloaded)
+    elif item.action == Action.unzip:
+        with ZipFile(item.downloaded, "r") as file:
+            file.extract(item.target.name, path=item.target.parent)
+    elif item.action == Action.untar:
+        _untar(item)
+    elif item.action == Action.command and item.command is not None:
+        kwargs = {"target": item.target, "downloaded": item.downloaded}
+        run(split(item.command.format(**kwargs)), check=True)
+
+    if not item.target.is_symlink():
+        item.target.chmod(item.target.stat().st_mode | S_IEXEC)
+
+
+def _parse_args() -> _CustomNamespace:
+    parser = ArgumentParser(
+        prog=Path(__file__).name,
+        formatter_class=ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument("--version", action="version", version=__version__)
     help_ = "TOML specification"
     parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
@@ -48,138 +140,45 @@ def parse_args():
     help_ = "Output directory"
     default = "~/.cache/dotlocalslashbin/"
     parser.add_argument("--downloaded", default=default, help=help_, type=Path)
-    return parser.parse_args(namespace=CustomNamespace)
+    return parser.parse_args(namespace=_CustomNamespace())
 
 
-@contextmanager
-def _download(
-    args: type[CustomNamespace],
-    *,
-    name: str,
-    url: str,
-    target: Path | None = None,
-    action: Action | None = None,
-    expected: str | None = None,
-    version: str | None = None,
-    prefix: str | None = None,
-    command: str | None = None,
-    ignore: set = set(),
-) -> Generator[tuple[Path, Path], None, None]:
-    """Context manager to download and install a program
+def _download(item: Item) -> None:
+    item.downloaded.parent.mkdir(parents=True, exist_ok=True)
+    with urlopen(item.url) as fp, item.downloaded.open("wb") as dp:
+        size = int(fp.headers.get("Content-Length", -1))
+        print(f"Downloading {item.name}…")
+        written = dp.write(fp.read())
 
-    Arguments:
-        url: the URL to download
-        action: action to take to install for example copy
-        target: the destination
-        expected: the SHA256 or SHA512 hex-digest of the file at URL
-        version: an argument to display the version for example --version
-        prefix: to remove when untarring
-        command: command to run to install after download
-    """
-    if target is None:
-        target = args.output.joinpath(name)
-    assert target is not None
-    if args.output != DEFAULT_OUTPUT:
-        target = target.absolute()
+    if size >= 0 and written != size:
+        msg = "Wrong content length"
+        raise RuntimeError(msg)
 
-    if url.startswith("https://"):
-        downloaded = args.downloaded.expanduser() / url.rsplit("/", 1)[1]
-        downloaded.parent.mkdir(parents=True, exist_ok=True)
-        if not downloaded.is_file():
-            with urlopen(url) as fp, downloaded.open("wb") as dp:
-                if "content-length" in fp.headers:
-                    size = int(fp.headers["Content-Length"])
-                else:
-                    size = -1
 
-                print(f"Downloading {name}…")
-                written = dp.write(fp.read())
+def _untar(item: Item) -> None:
+    with tarfile.open(item.downloaded, "r") as file:
+        for member in file.getmembers():
+            if member.path in item.ignore:
+                continue
+            member.path = member.path.removeprefix(item.prefix)
+            try:
+                file.extract(member, path=item.target.parent, filter="tar")
+            except TypeError:  # before 3.11.4 e.g. Debian 12
+                file.extract(member, path=item.target.parent)
 
-            if size >= 0 and written != size:
-                raise RuntimeError("Wrong content length")
 
-        if expected:
-            with downloaded.open("rb") as f:
-                digest = file_digest(f, "sha512" if len(expected) == 128 else "sha256")
-
-            if (actual := digest.hexdigest()) != expected:
-                raise RuntimeError(
-                    f"Unexpected digest for {downloaded}: {actual=} {expected=}"
-                )
+def _guess_action(item: Item) -> Action:
+    if item.url.endswith((".tar.gz", ".tar")):
+        guess = Action.untar
+    elif item.url.endswith(".zip"):
+        guess = Action.unzip
+    elif item.url.startswith("/"):
+        guess = Action.symlink
+    elif item.command:
+        guess = Action.command
     else:
-        downloaded = Path(url)
-
-    if action is None:
-        if url.endswith(".tar.gz") or url.endswith(".tar"):
-            action = Action.untar
-        elif url.endswith(".zip"):
-            action = Action.unzip
-        elif url.startswith("/"):
-            action = Action.symlink
-        elif command:
-            action = Action.command
-        else:
-            action = Action.copy
-
-    message = ("#" if version else "$") + f" {target} " + (version or "")
-    target = target.expanduser()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.unlink(missing_ok=True)
-    if action == Action.copy:
-        copy(downloaded, target)
-    elif action == Action.symlink:
-        target.symlink_to(downloaded)
-    elif action == Action.unzip:
-        with ZipFile(downloaded, "r") as file:
-            file.extract(target.name, path=target.parent)
-    elif action == Action.untar:
-        with tarfile.open(downloaded, "r") as file:
-            for member in file.getmembers():
-                if prefix:
-                    member.path = member.path.removeprefix(prefix)
-                if member.path in ignore:
-                    continue
-                try:
-                    file.extract(member, path=target.parent, filter="tar")
-                except TypeError:  # before 3.11.4 e.g. Debian 12
-                    file.extract(member, path=target.parent)
-
-    elif action == Action.command and command is not None:
-        kwargs = dict(target=target, downloaded=downloaded)
-        run(split(command.format(**kwargs)), check=True)
-
-    yield downloaded, target
-
-    if not target.is_symlink():
-        target.chmod(target.stat().st_mode | S_IEXEC)
-
-    print(message)
-    if version:
-        run([target, version], check=True)
-
-    print()
-
-
-def main() -> int:
-    args = parse_args()
-
-    with args.input.expanduser().open("rb") as file:
-        data = load(file)
-
-    for name, kwargs in data.items():
-        kwargs["name"] = name
-        if "target" in kwargs:
-            kwargs["target"] = Path(kwargs["target"])
-        if "action" in kwargs:
-            kwargs["action"] = getattr(Action, kwargs["action"])
-        try:
-            with _download(args, **kwargs) as (downloaded, target):
-                pass
-        except HTTPError as e:
-            print(f"Error {e.code} downloading {e.url}")
-            return 1
-
-    return 0
+        guess = Action.copy
+    return guess
 
 
 if __name__ == "__main__":
