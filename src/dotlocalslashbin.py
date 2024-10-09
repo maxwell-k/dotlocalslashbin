@@ -99,11 +99,8 @@ def _download(
                 raise RuntimeError("Wrong content length")
 
         if expected:
-            digest = "sha256"
-            if len(expected) == 128:
-                digest = "sha512"
             with downloaded.open("rb") as f:
-                digest = file_digest(f, digest)
+                digest = file_digest(f, "sha512" if len(expected) == 128 else "sha256")
 
             if (actual := digest.hexdigest()) != expected:
                 raise RuntimeError(
