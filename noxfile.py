@@ -7,7 +7,6 @@ PRIMARY = "3.12"
 VIRTUAL_ENVIRONMENT = ".venv"
 CWD = Path(".").absolute()
 PYTHON = CWD / VIRTUAL_ENVIRONMENT / "bin" / "python"
-SCRIPT = "src/dotlocalslashbin.py"
 DIST = Path("dist")
 
 
@@ -29,7 +28,9 @@ def reuse(session) -> None:
 @nox.session(python=PRIMARY)
 def github_output(session) -> None:
     """Display outputs for CI integration"""
-    version = session.run("python", SCRIPT, "--version", silent=True).strip()
+    if len(scripts := list(Path("src").glob("*.py"))) > 1:
+        session.error("More than one script found in src/")
+    version = session.run("python", scripts[0], "--version", silent=True).strip()
     print(f"version={version}")  # version= adds quotes
 
 
@@ -66,6 +67,6 @@ def static(session) -> None:
     session.run("codespell")
 
 
-# noxfile.py
+# noxfile.py / https://github.com/maxwell-k/dotlocalslashbin/blob/main/noxfile.py
 # Copyright 2024 Keith Maxwell
 # SPDX-License-Identifier: MPL-2.0
