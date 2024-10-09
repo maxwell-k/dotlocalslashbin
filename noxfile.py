@@ -57,21 +57,19 @@ def check(session: nox.Session) -> None:
 
 @nox.session(python=PRIMARY)
 def static(session: nox.Session) -> None:
-    """Run static analysis: usort, black and flake8."""
-    session.install("usort")
-    session.run("usort", "check", "src", "noxfile.py")
+    """Run static analysis: usort, black and flake8.
 
-    session.install("black")
-    session.run("black", "--check", ".")
+    Use the tools that were previously installed into .venv so that:
 
-    session.install("ruff")
-    session.run("ruff", "check", ".")
+    (1) the implementation or library stubs are available to type checkers
+    (2) no time is spent installing a second time
+    (3) versioning can be handled once
 
-    session.install("codespell")
-    session.run("codespell")
-
-    # run from _BIN to avoid errors like:
-    # > Cannot find implementation or library stub for module
+    """
+    session.run(_BIN / "usort", "check", "src", "noxfile.py", external=True)
+    session.run(_BIN / "black", "--check", ".", external=True)
+    session.run(_BIN / "ruff", "check", ".", external=True)
+    session.run(_BIN / "codespell", external=True)
     session.run(_BIN / "mypy", ".", external=True)
 
 
