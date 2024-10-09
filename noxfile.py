@@ -5,8 +5,9 @@ import nox
 
 PRIMARY = "3.12"
 VIRTUAL_ENVIRONMENT = ".venv"
-CWD = Path(".").absolute()
-PYTHON = CWD / VIRTUAL_ENVIRONMENT / "bin" / "python"
+_CWD = Path(".").absolute()
+_BIN = _CWD / VIRTUAL_ENVIRONMENT / "bin"
+PYTHON = _BIN / "python"
 DIST = Path("dist")
 
 
@@ -65,6 +66,10 @@ def static(session) -> None:
 
     session.install("codespell")
     session.run("codespell")
+
+    # run from _BIN to avoid errors like:
+    # > Cannot find implementation or library stub for module
+    session.run(_BIN / "mypy", ".", external=True)
 
 
 # noxfile.py / https://github.com/maxwell-k/dotlocalslashbin/blob/main/noxfile.py
