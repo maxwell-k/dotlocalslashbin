@@ -32,7 +32,6 @@ class CustomNamespace(Namespace):
     output: Path
     input: Path
     downloaded: Path
-    completions: Path
 
 
 def parse_args():
@@ -45,9 +44,6 @@ def parse_args():
     help_ = "Output directory"
     default = "~/.cache/dotlocalslashbin/"
     parser.add_argument("--downloaded", default=default, help=help_, type=Path)
-    help_ = "Directory for ZSH completions"
-    default = "~/.local/share/zsh/site-functions/"
-    parser.add_argument("--completions", default=default, help=help_, type=Path)
     return parser.parse_args(namespace=CustomNamespace)
 
 
@@ -62,7 +58,6 @@ def _download(
     expected: str | None = None,
     version: str | None = None,
     prefix: str | None = None,
-    completions: str | None = None,
     command: str | None = None,
     ignore: set = set(),
 ) -> Generator[tuple[Path, Path], None, None]:
@@ -75,7 +70,6 @@ def _download(
         expected: the SHA256 or SHA512 hex-digest of the file at URL
         version: an argument to display the version for example --version
         prefix: to remove when untarring
-        completions: whether to generate ZSH completions
         command: command to run to install after download
     """
     if target is None:
@@ -157,13 +151,6 @@ def _download(
 
     if not target.is_symlink():
         target.chmod(target.stat().st_mode | S_IEXEC)
-
-    if completions:
-        output = args.completions.expanduser() / f"_{target.name}"
-        output.parent.mkdir(parents=True, exist_ok=True)
-        kwargs = dict(target=target)  # target may not be on PATH
-        with output.open("w") as file:
-            run(split(completions.format(**kwargs)), check=True, stdout=file)
 
     print(message)
     if version:
