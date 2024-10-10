@@ -1,4 +1,4 @@
-"""Nox sessions."""
+"""Reusable nox sessions for a single file project with no tests."""
 
 from pathlib import Path
 from shutil import rmtree
