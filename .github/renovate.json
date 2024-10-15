@@ -19,5 +19,14 @@
       ],
       "datasourceTemplate": "npm"
     }
+  ],
+  "packageRules": [
+    {
+      "description": "Automerge upgrades to pyright",
+      "matchDepNames": [
+        "pyright"
+      ],
+      "automerge": true
+    }
   ]
 }
