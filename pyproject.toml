@@ -26,6 +26,7 @@ test = [
   "flit",
   "mypy",
   "nox",
+  "pytest",
   "ruff",
   "usort",
 ]

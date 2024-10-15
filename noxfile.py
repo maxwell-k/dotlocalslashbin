@@ -1,4 +1,4 @@
-"""Reusable nox sessions for a single file project with no tests."""
+"""Reusable nox sessions for a single file project."""
 
 from pathlib import Path
 from shutil import rmtree
@@ -32,9 +32,10 @@ def reuse(session: nox.Session) -> None:
 @nox.session(python=PRIMARY)
 def github_output(session: nox.Session) -> None:
     """Display outputs for CI integration."""
-    if len(scripts := list(Path("src").glob("*.py"))) > 1:
+    scripts = set(Path("src").glob("*.py")) - set(Path("src").glob("*_test.py"))
+    if len(scripts) > 1:
         session.error("More than one script found in src/")
-    version = session.run("python", scripts[0], "--version", silent=True)
+    version = session.run("python", scripts.pop(), "--version", silent=True)
     print("version=" + cast(str, version).strip())  # version= adds quotes
 
 
@@ -80,6 +81,12 @@ def static(session: nox.Session) -> None:
         f"--pythonpath={PYTHON}",
         external=True,
     )
+
+
+@nox.session(python=PRIMARY)
+def test(session: nox.Session) -> None:
+    """Run test suite."""
+    session.run(PYTHON, "-m", "pytest", external=True)
 
 
 # noxfile.py / https://github.com/maxwell-k/dotlocalslashbin/blob/main/noxfile.py
