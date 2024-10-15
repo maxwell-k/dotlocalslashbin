@@ -35,7 +35,7 @@ def github_output(session: nox.Session) -> None:
     scripts = set(Path("src").glob("*.py")) - set(Path("src").glob("*_test.py"))
     if len(scripts) > 1:
         session.error("More than one script found in src/")
-    version = session.run("python", scripts.pop(), "--version", silent=True)
+    version = session.run(PYTHON, scripts.pop(), "--version", silent=True)
     print("version=" + cast(str, version).strip())  # version= adds quotes
 
 
