@@ -23,13 +23,6 @@ def dev(session: nox.Session) -> None:
 
 
 @nox.session(python=PRIMARY)
-def reuse(session: nox.Session) -> None:
-    """Run reuse lint outside of CI."""
-    session.install("reuse")
-    session.run("python", "-m", "reuse", "lint")
-
-
-@nox.session(python=PRIMARY)
 def github_output(session: nox.Session) -> None:
     """Display outputs for CI integration."""
     scripts = set(Path("src").glob("*.py")) - set(Path("src").glob("*_test.py"))
@@ -55,7 +48,7 @@ def check(session: nox.Session) -> None:
     session.run(_BIN / "twine", "check", "--strict", *DIST.glob("*.*"))
 
 
-@nox.session(python=PRIMARY)
+@nox.session(python=PRIMARY, venv_backend="none")
 def static(session: nox.Session) -> None:
     """Run static analysis: usort, black and flake8.
 
@@ -66,11 +59,12 @@ def static(session: nox.Session) -> None:
     (3) versioning can be handled once
 
     """
-    session.run(_BIN / "usort", "check", "src", "noxfile.py", external=True)
-    session.run(_BIN / "black", "--check", ".", external=True)
-    session.run(_BIN / "ruff", "check", ".", external=True)
-    session.run(_BIN / "codespell", external=True)
-    session.run(_BIN / "mypy", ".", external=True)
+    session.run(_BIN / "reuse", "lint")
+    session.run(_BIN / "usort", "check", "src", "noxfile.py")
+    session.run(_BIN / "black", "--check", ".")
+    session.run(_BIN / "ruff", "check", ".")
+    session.run(_BIN / "codespell")
+    session.run(_BIN / "mypy", ".")
     session.run(
         "npm",
         "exec",
@@ -78,7 +72,6 @@ def static(session: nox.Session) -> None:
         "--yes",
         "--",
         f"--pythonpath={PYTHON}",
-        external=True,
     )
 
 
