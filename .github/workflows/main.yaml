@@ -1,0 +1,31 @@
+# .github/workflows/main.yaml
+# Copyright 2023 Keith Maxwell
+# SPDX-License-Identifier: CC0-1.0
+
+on: # yamllint disable-line rule:truthy
+  push:
+    branches: [main]
+    tags: [v*]
+  pull_request: { branches: [main] }
+  workflow_dispatch:
+
+jobs:
+  nox: { uses: ./.github/workflows/nox.yaml }
+  publish:
+    needs: [nox]
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    permissions: { id-token: write }
+    environment:
+      name: pypi
+      url: >-
+        https://pypi.org/project/dotlocalslashbin/${{
+          needs.nox.outputs.version }}/
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: artifact }
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        # https://github.com/pypa/gh-action-pypi-publish/blob/unstable/v1/action.yml
+        with:
+          print-hash: true
+          packages-dir: .

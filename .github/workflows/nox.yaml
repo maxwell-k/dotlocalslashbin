@@ -1,13 +1,13 @@
 # .github/workflows/nox.yaml
-# Copyright 2023 Keith Maxwell
+# Copyright 2024 Keith Maxwell
 # SPDX-License-Identifier: CC0-1.0
 
 on: # yamllint disable-line rule:truthy
-  push:
-    branches: [main]
-    tags: [v*]
-  pull_request: { branches: [main] }
-  workflow_dispatch:
+  workflow_call:
+    outputs:
+      version:
+        description: "The version number"
+        value: ${{ jobs.nox.outputs.version }}
 
 jobs:
   nox:
@@ -16,8 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with: { python-version: "3.13" }
         id: setup
+      # use pipx below —  it is available in the ubuntu-latest image —  uv isn't
+      # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md
       - run: pipx run "--python=${{ steps.setup.outputs.python-path }}" nox
       - run: >-
           pipx run "--python=${{ steps.setup.outputs.python-path }}"
@@ -26,21 +28,3 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { path: dist }
       - uses: dprint/check@v2.2
-  publish:
-    needs: [nox]
-    runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/') }}
-    permissions: { id-token: write }
-    environment:
-      name: pypi
-      url: >-
-        https://pypi.org/project/dotlocalslashbin/${{
-          needs.nox.outputs.version }}/
-    steps:
-      - uses: actions/download-artifact@v4
-        with: { name: artifact }
-      - uses: pypa/gh-action-pypi-publish@release/v1
-        # https://github.com/pypa/gh-action-pypi-publish/blob/unstable/v1/action.yml
-        with:
-          print-hash: true
-          packages-dir: .

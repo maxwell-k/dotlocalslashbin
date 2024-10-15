@@ -3,5 +3,30 @@
   "extends": [
     "config:recommended",
     "github>kachick/renovate-config-dprint#1.1.0"
+  ],
+  "poetry": {
+    "enabled": false
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "^noxfile.py$"
+      ],
+      "depNameTemplate": "pyright",
+      "matchStrings": [
+        "\\\"pyright@(?<currentValue>.+?)\\\""
+      ],
+      "datasourceTemplate": "npm"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Automerge upgrades to pyright",
+      "matchDepNames": [
+        "pyright"
+      ],
+      "automerge": true
+    }
   ]
 }

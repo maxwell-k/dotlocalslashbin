@@ -1,1 +1,6 @@
-yq
+SHA256
+SHA512
+TOML
+dotfiles
+dotlocalslashbin
+zipapp
