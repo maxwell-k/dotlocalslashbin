@@ -26,6 +26,7 @@ test = [
   "flit",
   "mypy",
   "nox",
+  "pytest",
   "ruff",
   "usort",
 ]
@@ -38,13 +39,10 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-  # "C901", # TODO
   "D203", # incompatible with D211
   "D213", # incompatible with D212
   "I", # prefer usort to ruff isort implementation
-  # "PLR0912", # TODO
-  # "PLR0913", # TODO
-  # "PLR0915", # TODO
+  "PT", # prefer unittest style
   "S310", # the rule errors on the "use instead" code from `ruff rule S310`
   "S602", # assume arguments to subprocess.run are validated
   "S603", # assume trusted input  to subprocess.run
