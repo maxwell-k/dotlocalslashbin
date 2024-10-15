@@ -2,6 +2,10 @@
 # src/dotlocalslashbin.py
 # Copyright 2022 Keith Maxwell
 # SPDX-License-Identifier: MPL-2.0
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Download and extract files to `~/.local/bin/`."""
 import tarfile
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
