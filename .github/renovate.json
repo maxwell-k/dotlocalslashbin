@@ -3,5 +3,18 @@
   "extends": [
     "config:recommended",
     "github>kachick/renovate-config-dprint#1.1.0"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "^noxfile.py$"
+      ],
+      "depNameTemplate": "pyright",
+      "matchStrings": [
+        "\\\"pyright@(?<currentValue>.+?)\\\""
+      ],
+      "datasourceTemplate": "npm"
+    }
   ]
 }
