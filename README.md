@@ -39,7 +39,7 @@ Command to install the latest released `dotlocalslashbin` from PyPI:
 Command to run latest development version of `dotlocalslashbin` directly from
 GitHub:
 
-    uv run https://raw.githubusercontent.com/maxwell-k/dotfiles/refs/heads/main/dotlocalslashbin.py --help
+    uv run https://raw.githubusercontent.com/maxwell-k/dotlocalslashbin/refs/heads/main/src/dotlocalslashbin.py --version
 
 ## Examples
 

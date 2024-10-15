@@ -23,7 +23,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.10"
+__version__ = "0.0.11"
 
 _OUTPUT = Path("~/.local/bin/")
 _SHA512_LENGTH = 128
