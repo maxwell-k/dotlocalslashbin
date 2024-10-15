@@ -71,6 +71,15 @@ def static(session: nox.Session) -> None:
     session.run(_BIN / "ruff", "check", ".", external=True)
     session.run(_BIN / "codespell", external=True)
     session.run(_BIN / "mypy", ".", external=True)
+    session.run(
+        "npm",
+        "exec",
+        "pyright@1.1.383",
+        "--yes",
+        "--",
+        f"--pythonpath={PYTHON}",
+        external=True,
+    )
 
 
 # noxfile.py / https://github.com/maxwell-k/dotlocalslashbin/blob/main/noxfile.py
