@@ -21,7 +21,7 @@ from zipfile import ZipFile
 
 __version__ = "0.0.8"
 
-DEFAULT_OUTPUT = Path("~/.local/bin/")
+_OUTPUT = Path("~/.local/bin/")
 _SHA512_LENGTH = 128
 
 
@@ -84,7 +84,7 @@ def main() -> int:
             print(f"Error {e.code} downloading {e.url}")
             return 1
 
-        arg0 = item.name if args.output == DEFAULT_OUTPUT else str(item.target)
+        arg0 = item.name if args.output == _OUTPUT else str(item.target.absolute())
         print(" ".join(("#" if item.version else "$", arg0, item.version or "")))
         if item.version:
             run([arg0, item.version], check=True)
@@ -135,7 +135,7 @@ def _parse_args() -> _CustomNamespace:
     help_ = "TOML specification"
     parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
     help_ = "Target directory"
-    parser.add_argument("--output", default=DEFAULT_OUTPUT, help=help_, type=Path)
+    parser.add_argument("--output", default=_OUTPUT, help=help_, type=Path)
     help_ = "Output directory"
     default = "~/.cache/dotlocalslashbin/"
     parser.add_argument("--downloaded", default=default, help=help_, type=Path)
