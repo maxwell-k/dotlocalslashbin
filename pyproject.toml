@@ -28,6 +28,7 @@ test = [
   "nox",
   "pytest",
   "ruff",
+  "twine",
   "usort",
 ]
 

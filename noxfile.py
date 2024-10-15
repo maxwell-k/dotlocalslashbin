@@ -49,11 +49,10 @@ def distributions(session: nox.Session) -> None:
     session.run("reproducibly", sdist, DIST)
 
 
-@nox.session(python=PRIMARY)
+@nox.session(python=PRIMARY, venv_backend="none")
 def check(session: nox.Session) -> None:
     """Check the built distributions with twine."""
-    session.install("twine")
-    session.run("twine", "check", "--strict", *DIST.glob("*.*"))
+    session.run(_BIN / "twine", "check", "--strict", *DIST.glob("*.*"))
 
 
 @nox.session(python=PRIMARY)
