@@ -85,8 +85,7 @@ def main() -> int:
             return 1
 
         arg0 = item.name if args.output == DEFAULT_OUTPUT else str(item.target)
-        message = ("# " if item.version else "$ ") + arg0 + (item.version or "")
-        print(message)
+        print(" ".join(("#" if item.version else "$", arg0, item.version or "")))
         if item.version:
             run([arg0, item.version], check=True)
         print()
