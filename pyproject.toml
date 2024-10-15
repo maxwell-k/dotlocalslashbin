@@ -45,6 +45,7 @@ ignore = [
   # "PLR0912", # TODO
   # "PLR0913", # TODO
   # "PLR0915", # TODO
+  "PT", # prefer unittest style
   "S310", # the rule errors on the "use instead" code from `ruff rule S310`
   "S602", # assume arguments to subprocess.run are validated
   "S603", # assume trusted input  to subprocess.run
