@@ -22,7 +22,7 @@ def dev(session: nox.Session) -> None:
     session.run(PYTHON, "-m", "pip", "install", "--editable", ".[test]")
 
 
-@nox.session(python=PRIMARY)
+@nox.session(python=PRIMARY, venv_backend="none")
 def github_output(session: nox.Session) -> None:
     """Display outputs for CI integration."""
     scripts = set(Path("src").glob("*.py")) - set(Path("src").glob("*_test.py"))
