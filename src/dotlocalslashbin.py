@@ -23,8 +23,9 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.11"
+__version__ = "0.0.12"
 
+_HOME = str(Path("~").expanduser())
 _OUTPUT = Path("~/.local/bin/")
 _SHA512_LENGTH = 128
 
@@ -48,7 +49,7 @@ class Item:
     action: Action
     downloaded: Path
     expected: str | None
-    version: str | None
+    version: str
     prefix: str
     command: str | None
     ignore: set
@@ -69,7 +70,7 @@ def main() -> int:
         item.target = Path(record.get("target", default)).expanduser()
         item.ignore = record.get("ignore", set())
         item.expected = record.get("expected", None)
-        item.version = record.get("version", None)
+        item.version = record.get("version", "")
         item.prefix = record.get("prefix", "")
         item.command = record.get("command", None)
 
@@ -88,8 +89,9 @@ def main() -> int:
             print(f"Error {e.code} downloading {e.url}")
             return 1
 
-        arg0 = item.name if args.output == _OUTPUT else str(item.target.absolute())
-        print(" ".join(("#" if item.version else "$", arg0, item.version or "")))
+        arg0 = str(item.target.absolute())
+        prompt = "#" if item.version else "$"
+        print(" ".join((prompt, arg0.replace(_HOME, "~"), item.version)))
         if item.version:
             run([arg0, item.version], check=True)
         print()
