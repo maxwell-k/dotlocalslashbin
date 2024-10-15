@@ -4,6 +4,9 @@
     "config:recommended",
     "github>kachick/renovate-config-dprint#1.1.0"
   ],
+  "poetry": {
+    "enabled": false
+  },
   "customManagers": [
     {
       "customType": "regex",
