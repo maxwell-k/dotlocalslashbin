@@ -6,7 +6,7 @@ from typing import cast
 
 import nox
 
-PRIMARY = "3.12"
+PRIMARY = "3.13"
 VIRTUAL_ENVIRONMENT = ".venv"
 _CWD = Path().absolute()
 _BIN = _CWD / VIRTUAL_ENVIRONMENT / "bin"
