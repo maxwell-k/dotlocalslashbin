@@ -25,6 +25,7 @@ from zipfile import ZipFile
 
 __version__ = "0.0.11"
 
+_HOME = str(Path("~").expanduser())
 _OUTPUT = Path("~/.local/bin/")
 _SHA512_LENGTH = 128
 
@@ -88,8 +89,9 @@ def main() -> int:
             print(f"Error {e.code} downloading {e.url}")
             return 1
 
-        arg0 = item.name if args.output == _OUTPUT else str(item.target.absolute())
-        print(" ".join(("#" if item.version else "$", arg0, item.version)))
+        arg0 = str(item.target.absolute())
+        prompt = "#" if item.version else "$"
+        print(" ".join((prompt, arg0.replace(_HOME, "~"), item.version)))
         if item.version:
             run([arg0, item.version], check=True)
         print()
