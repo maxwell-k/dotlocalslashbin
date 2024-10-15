@@ -23,19 +23,12 @@ def dev(session: nox.Session) -> None:
 
 
 @nox.session(python=PRIMARY)
-def reuse(session: nox.Session) -> None:
-    """Run reuse lint outside of CI."""
-    session.install("reuse")
-    session.run("python", "-m", "reuse", "lint")
-
-
-@nox.session(python=PRIMARY)
 def github_output(session: nox.Session) -> None:
     """Display outputs for CI integration."""
     scripts = set(Path("src").glob("*.py")) - set(Path("src").glob("*_test.py"))
     if len(scripts) > 1:
         session.error("More than one script found in src/")
-    version = session.run("python", scripts.pop(), "--version", silent=True)
+    version = session.run(PYTHON, scripts.pop(), "--version", silent=True)
     print("version=" + cast(str, version).strip())  # version= adds quotes
 
 
@@ -49,14 +42,13 @@ def distributions(session: nox.Session) -> None:
     session.run("reproducibly", sdist, DIST)
 
 
-@nox.session(python=PRIMARY)
+@nox.session(python=PRIMARY, venv_backend="none")
 def check(session: nox.Session) -> None:
     """Check the built distributions with twine."""
-    session.install("twine")
-    session.run("twine", "check", "--strict", *DIST.glob("*.*"))
+    session.run(_BIN / "twine", "check", "--strict", *DIST.glob("*.*"))
 
 
-@nox.session(python=PRIMARY)
+@nox.session(python=PRIMARY, venv_backend="none")
 def static(session: nox.Session) -> None:
     """Run static analysis: usort, black and flake8.
 
@@ -67,11 +59,12 @@ def static(session: nox.Session) -> None:
     (3) versioning can be handled once
 
     """
-    session.run(_BIN / "usort", "check", "src", "noxfile.py", external=True)
-    session.run(_BIN / "black", "--check", ".", external=True)
-    session.run(_BIN / "ruff", "check", ".", external=True)
-    session.run(_BIN / "codespell", external=True)
-    session.run(_BIN / "mypy", ".", external=True)
+    session.run(_BIN / "reuse", "lint")
+    session.run(_BIN / "usort", "check", "src", "noxfile.py")
+    session.run(_BIN / "black", "--check", ".")
+    session.run(_BIN / "ruff", "check", ".")
+    session.run(_BIN / "codespell")
+    session.run(_BIN / "mypy", ".")
     session.run(
         "npm",
         "exec",
@@ -79,14 +72,16 @@ def static(session: nox.Session) -> None:
         "--yes",
         "--",
         f"--pythonpath={PYTHON}",
-        external=True,
     )
 
 
-@nox.session(python=PRIMARY)
+@nox.session(python=PRIMARY, venv_backend="none")
 def test(session: nox.Session) -> None:
     """Run test suite."""
-    session.run(PYTHON, "-m", "pytest", external=True)
+    if sum(1 for _ in Path("src").glob("*_test.py")):
+        session.run(PYTHON, "-m", "pytest", external=True)
+    else:
+        session.skip("No test files in repository")
 
 
 # noxfile.py / https://github.com/maxwell-k/dotlocalslashbin/blob/main/noxfile.py

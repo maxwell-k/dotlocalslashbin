@@ -25,12 +25,27 @@ Optionally can:
 \* if the URL is an absolute path on the local file system; it is not downloaded
 to the cache.
 
+[uv]: https://github.com/astral-sh/uv
 [TOML]: https://en.wikipedia.org/wiki/TOML
+
+## Installation
+
+The recommended way to run `dotlocalslashbin` is with [uv].
+
+Command to install the latest released `dotlocalslashbin` from PyPI:
+
+    uv tool install dotlocalslashbin
+
+Command to run latest development version of `dotlocalslashbin` directly from
+GitHub:
+
+    uv run https://raw.githubusercontent.com/maxwell-k/dotfiles/refs/heads/main/dotlocalslashbin.py --help
 
 ## Examples
 
 For example to download `yq` to the current working directory, first save the
-following as `yq.toml`, then run the command below:
+following as `yq.toml`, then install with uv (above) and then run the command
+below:
 
 ```
 [yq]

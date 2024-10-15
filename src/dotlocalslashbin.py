@@ -2,6 +2,10 @@
 # src/dotlocalslashbin.py
 # Copyright 2022 Keith Maxwell
 # SPDX-License-Identifier: MPL-2.0
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Download and extract files to `~/.local/bin/`."""
 import tarfile
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
@@ -19,7 +23,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.9"
+__version__ = "0.0.10"
 
 _OUTPUT = Path("~/.local/bin/")
 _SHA512_LENGTH = 128
