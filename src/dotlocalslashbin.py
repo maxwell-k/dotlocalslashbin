@@ -48,7 +48,7 @@ class Item:
     action: Action
     downloaded: Path
     expected: str | None
-    version: str | None
+    version: str
     prefix: str
     command: str | None
     ignore: set
@@ -69,7 +69,7 @@ def main() -> int:
         item.target = Path(record.get("target", default)).expanduser()
         item.ignore = record.get("ignore", set())
         item.expected = record.get("expected", None)
-        item.version = record.get("version", None)
+        item.version = record.get("version", "")
         item.prefix = record.get("prefix", "")
         item.command = record.get("command", None)
 
@@ -89,7 +89,7 @@ def main() -> int:
             return 1
 
         arg0 = item.name if args.output == _OUTPUT else str(item.target.absolute())
-        print(" ".join(("#" if item.version else "$", arg0, item.version or "")))
+        print(" ".join(("#" if item.version else "$", arg0, item.version)))
         if item.version:
             run([arg0, item.version], check=True)
         print()
