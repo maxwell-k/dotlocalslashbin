@@ -82,10 +82,13 @@ def static(session: nox.Session) -> None:
     )
 
 
-@nox.session(python=PRIMARY)
+@nox.session(python=PRIMARY, venv_backend="none")
 def test(session: nox.Session) -> None:
     """Run test suite."""
-    session.run(PYTHON, "-m", "pytest", external=True)
+    if sum(1 for _ in Path("src").glob("*_test.py")):
+        session.run(PYTHON, "-m", "pytest", external=True)
+    else:
+        session.skip("No test files in repository")
 
 
 # noxfile.py / https://github.com/maxwell-k/dotlocalslashbin/blob/main/noxfile.py
