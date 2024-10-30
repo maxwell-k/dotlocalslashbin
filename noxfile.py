@@ -68,7 +68,7 @@ def static(session: nox.Session) -> None:
     session.run(
         "npm",
         "exec",
-        "pyright@1.1.386",
+        "pyright@1.1.387",
         "--yes",
         "--",
         f"--pythonpath={PYTHON}",
