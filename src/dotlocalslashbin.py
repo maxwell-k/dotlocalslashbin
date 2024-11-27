@@ -33,7 +33,7 @@ _SHA512_LENGTH = 128
 class _CustomNamespace(Namespace):
     output: Path
     input: Path
-    downloaded: Path
+    cache: Path
 
 
 Action = Enum("Action", ["command", "copy", "symlink", "untar", "unzip"])
@@ -80,7 +80,7 @@ def main() -> int:
             item.action = _guess_action(item)
 
         if item.url.startswith("https://"):
-            item.downloaded = args.downloaded.expanduser() / item.url.rsplit("/", 1)[1]
+            item.downloaded = args.cache.expanduser() / item.url.rsplit("/", 1)[1]
         else:
             item.downloaded = Path(item.url)
         try:
@@ -142,9 +142,9 @@ def _parse_args() -> _CustomNamespace:
     parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
     help_ = "Target directory"
     parser.add_argument("--output", default=_OUTPUT, help=help_, type=Path)
-    help_ = "Output directory"
+    help_ = "Cache directory"
     default = "~/.cache/dotlocalslashbin/"
-    parser.add_argument("--downloaded", default=default, help=help_, type=Path)
+    parser.add_argument("--cache", default=default, help=help_, type=Path)
     return parser.parse_args(namespace=_CustomNamespace())
 
 
