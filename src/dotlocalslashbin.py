@@ -104,14 +104,9 @@ def _process(item: Item) -> None:
     if not item.downloaded.is_file() and item.url.startswith("https://"):
         _download(item)
 
-    if item.expected:
-        with item.downloaded.open("rb") as f:
-            _digest = "sha512" if len(item.expected) == _SHA512_LENGTH else "sha256"
-            digest = file_digest(f, _digest)
-
-        if (actual := digest.hexdigest()) != item.expected:
-            msg = f"Unexpected digest for {item.downloaded}: {actual=} {item.expected=}"
-            raise RuntimeError(msg)
+    if item.expected and (actual := _digest(item)) != item.expected:
+        msg = f"Unexpected digest for {item.downloaded}: {actual=} {item.expected=}"
+        raise RuntimeError(msg)
 
     item.target.parent.mkdir(parents=True, exist_ok=True)
     item.target.unlink(missing_ok=True)
@@ -146,6 +141,15 @@ def _parse_args() -> _CustomNamespace:
     default = "~/.cache/dotlocalslashbin/"
     parser.add_argument("--downloaded", default=default, help=help_, type=Path)
     return parser.parse_args(namespace=_CustomNamespace())
+
+
+def _digest(item: Item) -> str:
+    sha512 = item.expected and len(item.expected) == _SHA512_LENGTH
+    _digest = "sha512" if sha512 else "sha256"
+    with item.downloaded.open("rb") as f:
+        digest = file_digest(f, _digest)
+
+    return digest.hexdigest()
 
 
 def _download(item: Item) -> None:
