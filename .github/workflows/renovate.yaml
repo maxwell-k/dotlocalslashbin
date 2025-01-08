@@ -1,0 +1,21 @@
+# .github/workflows/renovate.yaml
+# Copyright 2025 Keith Maxwell
+# SPDX-License-Identifier: CC0-1.0
+
+on: # yamllint disable-line rule:truthy
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+  workflow_dispatch:
+
+jobs:
+  dprint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: |-
+          node --version \
+          && npm --version \
+          && npm exec --yes --package renovate -- renovate --version
+      - run: npm exec --yes --package renovate -- renovate-config-validator
