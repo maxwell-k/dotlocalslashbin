@@ -25,6 +25,7 @@ jobs:
           pipx run "--python=${{ steps.setup.outputs.python-path }}"
           nox --session=github_output >> "$GITHUB_OUTPUT"
         id: version
+      # yamllint disable-line rule:line-length
       - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4
         with: { path: dist }
       - uses: dprint/check@2f1cf31537886c3bfb05591c031f7744e48ba8a1 # v2.2

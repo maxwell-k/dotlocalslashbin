@@ -31,6 +31,7 @@ test = [
   "ruff",
   "twine",
   "usort",
+  "yamllint",
 ]
 
 [tool.ruff]
