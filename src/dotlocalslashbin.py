@@ -8,7 +8,12 @@
 # ///
 """Download and extract files to `~/.local/bin/`."""
 import tarfile
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
+from argparse import (
+    ArgumentDefaultsHelpFormatter,
+    ArgumentParser,
+    BooleanOptionalAction,
+    Namespace,
+)
 from dataclasses import dataclass
 from enum import Enum
 from hashlib import file_digest
@@ -23,7 +28,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.12"
+__version__ = "0.0.13"
 
 _HOME = str(Path("~").expanduser())
 _OUTPUT = Path("~/.local/bin/")
@@ -33,7 +38,7 @@ _SHA512_LENGTH = 128
 class _CustomNamespace(Namespace):
     output: Path
     input: Path
-    downloaded: Path
+    cache: Path
 
 
 Action = Enum("Action", ["command", "copy", "symlink", "untar", "unzip"])
@@ -59,6 +64,10 @@ def main() -> int:
     """Parse command line arguments and download each file."""
     args = _parse_args()
 
+    if args.clear:
+        for path in args.cache.expanduser().iterdir():
+            path.unlink()
+
     with args.input.expanduser().open("rb") as file:
         data = load(file)
 
@@ -80,7 +89,7 @@ def main() -> int:
             item.action = _guess_action(item)
 
         if item.url.startswith("https://"):
-            item.downloaded = args.downloaded.expanduser() / item.url.rsplit("/", 1)[1]
+            item.downloaded = args.cache.expanduser() / item.url.rsplit("/", 1)[1]
         else:
             item.downloaded = Path(item.url)
         try:
@@ -142,9 +151,16 @@ def _parse_args() -> _CustomNamespace:
     parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
     help_ = "Target directory"
     parser.add_argument("--output", default=_OUTPUT, help=help_, type=Path)
-    help_ = "Output directory"
+    help_ = "Cache directory"
     default = "~/.cache/dotlocalslashbin/"
-    parser.add_argument("--downloaded", default=default, help=help_, type=Path)
+    parser.add_argument("--cache", default=default, help=help_, type=Path)
+    help_ = "Clear the cache directory first"
+    parser.add_argument(
+        "--clear",
+        default=False,
+        action=BooleanOptionalAction,
+        help=help_,
+    )
     return parser.parse_args(namespace=_CustomNamespace())
 
 
