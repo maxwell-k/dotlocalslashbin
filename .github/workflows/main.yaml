@@ -22,10 +22,9 @@ jobs:
         https://pypi.org/project/dotlocalslashbin/${{
           needs.nox.outputs.version }}/
     steps:
+      # yamllint disable-line rule:line-length
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
-        with: { name: artifact }
+        with: { name: artifact, path: dist }
       - uses: pypa/gh-action-pypi-publish@release/v1
         # https://github.com/pypa/gh-action-pypi-publish/blob/release/v1/action.yml
-        with:
-          print-hash: true
-          packages-dir: .
+        with: { print-hash: true }
