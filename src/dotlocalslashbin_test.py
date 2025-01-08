@@ -32,5 +32,41 @@ class TestReadme(unittest.TestCase):
             self.assertEqual(0, completed.returncode)
 
 
+class TestCache(unittest.TestCase):
+    """Test behaviour of the cache."""
+
+    def _execute(self, extra: list[str]) -> int:
+        with TemporaryDirectory() as cache, TemporaryDirectory() as output:
+            Path(cache).joinpath("was_not_cleared").touch()
+            run(
+                [
+                    executable,
+                    Path("src/dotlocalslashbin.py").absolute(),
+                    "--input=" + str(Path("example.toml").absolute()),
+                    f"--output={output}",
+                    f"--cache={cache}",
+                    *extra,
+                ],
+                check=True,
+                capture_output=True,
+            )
+            return sum(1 for _ in Path(cache).iterdir())
+
+    def test_example_without_clear(self) -> None:
+        """Check that the cache is not cleared by default."""
+        count = self._execute([])
+        self.assertEqual(2, count)
+
+    def test_example_with_clear(self) -> None:
+        """Check that the cache is cleared."""
+        count = self._execute(["--clear"])
+        self.assertEqual(1, count)
+
+    def test_example_with_no_clear(self) -> None:
+        """Check that the cache is not cleared."""
+        count = self._execute(["--no-clear"])
+        self.assertEqual(2, count)
+
+
 if __name__ == "__main__":
     unittest.main()

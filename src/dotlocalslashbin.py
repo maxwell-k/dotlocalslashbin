@@ -8,7 +8,12 @@
 # ///
 """Download and extract files to `~/.local/bin/`."""
 import tarfile
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
+from argparse import (
+    ArgumentDefaultsHelpFormatter,
+    ArgumentParser,
+    BooleanOptionalAction,
+    Namespace,
+)
 from dataclasses import dataclass
 from enum import Enum
 from hashlib import file_digest
@@ -58,6 +63,10 @@ class Item:
 def main() -> int:
     """Parse command line arguments and download each file."""
     args = _parse_args()
+
+    if args.clear:
+        for path in args.cache.expanduser().iterdir():
+            path.unlink()
 
     with args.input.expanduser().open("rb") as file:
         data = load(file)
@@ -145,6 +154,13 @@ def _parse_args() -> _CustomNamespace:
     help_ = "Cache directory"
     default = "~/.cache/dotlocalslashbin/"
     parser.add_argument("--cache", default=default, help=help_, type=Path)
+    help_ = "Clear the cache directory first"
+    parser.add_argument(
+        "--clear",
+        default=False,
+        action=BooleanOptionalAction,
+        help=help_,
+    )
     return parser.parse_args(namespace=_CustomNamespace())
 
 

@@ -21,6 +21,7 @@ Optionally can:
 - invoke the target with an argument, for example `--version`
 - strip a prefix while extracting
 - ignore certain files while extracting
+- clear the cache beforehand
 
 \* if the URL is an absolute path on the local file system; it is not downloaded
 to the cache.
