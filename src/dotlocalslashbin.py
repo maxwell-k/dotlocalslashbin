@@ -28,7 +28,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.14"
+__version__ = "0.0.15"
 
 _HOME = str(Path("~").expanduser())
 _OUTPUT = Path("~/.local/bin/")
