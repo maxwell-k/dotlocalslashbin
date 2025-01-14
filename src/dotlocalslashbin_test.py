@@ -95,6 +95,11 @@ class TestInputs(unittest.TestCase):
             count = self._execute(["--input=" + str(i)])
             self.assertEqual(1, count)
 
+    def test_both(self) -> None:
+        """Check that two input files together result in two outputs."""
+        count = self._execute(["--input=" + str(i) for i in [EXAMPLE_1, EXAMPLE_2]])
+        self.assertEqual(2, count)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -8,12 +8,7 @@
 # ///
 """Download and extract files to `~/.local/bin/`."""
 import tarfile
-from argparse import (
-    ArgumentDefaultsHelpFormatter,
-    ArgumentParser,
-    BooleanOptionalAction,
-    Namespace,
-)
+from argparse import ArgumentParser, BooleanOptionalAction, Namespace
 from dataclasses import dataclass
 from enum import Enum
 from hashlib import file_digest
@@ -30,14 +25,16 @@ from zipfile import ZipFile
 
 __version__ = "0.0.16"
 
+_CACHE = Path("~/.cache/dotlocalslashbin/")
 _HOME = str(Path("~").expanduser())
+_INPUT = "bin.toml"
 _OUTPUT = Path("~/.local/bin/")
 _SHA512_LENGTH = 128
 
 
 class _CustomNamespace(Namespace):
     output: Path
-    input: Path
+    input: list[Path]
     cache: Path
 
 
@@ -68,8 +65,10 @@ def main() -> int:
         for path in args.cache.expanduser().iterdir():
             path.unlink()
 
-    with args.input.expanduser().open("rb") as file:
-        data = load(file)
+    data: dict[str, dict] = {}
+    for i in args.input:
+        with i.expanduser().open("rb") as file:
+            data |= load(file)
 
     for name, record in data.items():
         item = Item()
@@ -144,24 +143,21 @@ def _process(item: Item) -> None:
 def _parse_args() -> _CustomNamespace:
     parser = ArgumentParser(
         prog=Path(__file__).name,
-        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog="¹ --input can be specified multiple times",
     )
     parser.add_argument("--version", action="version", version=__version__)
-    help_ = "TOML specification"
-    parser.add_argument("--input", default="bin.toml", help=help_, type=Path)
-    help_ = "Target directory"
+    help_ = f"TOML specification (default: {_INPUT})¹"
+    parser.add_argument("--input", action="append", help=help_, type=Path)
+    help_ = f"Target directory (default: {_OUTPUT})"
     parser.add_argument("--output", default=_OUTPUT, help=help_, type=Path)
-    help_ = "Cache directory"
-    default = "~/.cache/dotlocalslashbin/"
-    parser.add_argument("--cache", default=default, help=help_, type=Path)
-    help_ = "Clear the cache directory first"
-    parser.add_argument(
-        "--clear",
-        default=False,
-        action=BooleanOptionalAction,
-        help=help_,
-    )
-    return parser.parse_args(namespace=_CustomNamespace())
+    help_ = f"Cache directory (default: {_CACHE})"
+    parser.add_argument("--cache", default=_CACHE, help=help_, type=Path)
+    help_ = "Clear the cache directory first (default: --no-clear)"
+    parser.add_argument("--clear", action=BooleanOptionalAction, help=help_)
+    result = parser.parse_args(namespace=_CustomNamespace())
+    if not result.input:
+        result.input = [Path(_INPUT)]
+    return result
 
 
 def _download(item: Item) -> None:
