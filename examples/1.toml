@@ -1,6 +1,7 @@
-[example]
+["MPL-2.0.txt"]
 url = "https://raw.githubusercontent.com/maxwell-k/dotlocalslashbin/refs/tags/v0.0.12/LICENSES/MPL-2.0.txt"
 expected = "66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172"
 
+# examples/1.toml
 # SPDX-FileCopyrightText: 2025 Keith Maxwell <keith.maxwell@gmail.com>
 # SPDX-License-Identifier: CC0-1.0

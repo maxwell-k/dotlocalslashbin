@@ -11,6 +11,7 @@ from sys import executable
 from tempfile import TemporaryDirectory
 
 EXAMPLE_1 = Path("examples/1.toml").absolute()
+EXAMPLE_2 = Path("examples/2.toml").absolute()
 
 
 class TestReadme(unittest.TestCase):
@@ -90,12 +91,9 @@ class TestInputs(unittest.TestCase):
 
     def test_one(self) -> None:
         """Check one input results in one output."""
-        count = self._execute(
-            [
-                "--input=" + str(EXAMPLE_1),
-            ],
-        )
-        self.assertEqual(1, count)
+        for i in EXAMPLE_1, EXAMPLE_2:
+            count = self._execute(["--input=" + str(i)])
+            self.assertEqual(1, count)
 
 
 if __name__ == "__main__":
