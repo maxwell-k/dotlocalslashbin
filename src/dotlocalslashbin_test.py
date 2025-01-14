@@ -10,6 +10,8 @@ from subprocess import run
 from sys import executable
 from tempfile import TemporaryDirectory
 
+EXAMPLE_1 = Path("examples/1.toml").absolute()
+
 
 class TestReadme(unittest.TestCase):
     """Tests based on README.md."""
@@ -42,7 +44,7 @@ class TestCache(unittest.TestCase):
                 [
                     executable,
                     Path("src/dotlocalslashbin.py").absolute(),
-                    "--input=" + str(Path("example.toml").absolute()),
+                    "--input=" + str(EXAMPLE_1),
                     f"--output={output}",
                     f"--cache={cache}",
                     *extra,
@@ -90,7 +92,7 @@ class TestInputs(unittest.TestCase):
         """Check one input results in one output."""
         count = self._execute(
             [
-                "--input=" + str(Path("example.toml").absolute()),
+                "--input=" + str(EXAMPLE_1),
             ],
         )
         self.assertEqual(1, count)
