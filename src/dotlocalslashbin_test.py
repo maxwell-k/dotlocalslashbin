@@ -68,5 +68,33 @@ class TestCache(unittest.TestCase):
         self.assertEqual(2, count)
 
 
+class TestInputs(unittest.TestCase):
+    """Test behaviour of the the CLI with multiple inputs."""
+
+    def _execute(self, inputs: list[str]) -> int:
+        with TemporaryDirectory() as cache, TemporaryDirectory() as output:
+            run(
+                [
+                    executable,
+                    Path("src/dotlocalslashbin.py").absolute(),
+                    f"--output={output}",
+                    f"--cache={cache}",
+                    *inputs,
+                ],
+                check=True,
+                capture_output=True,
+            )
+            return sum(1 for _ in Path(output).iterdir())
+
+    def test_one(self) -> None:
+        """Check one input results in one output."""
+        count = self._execute(
+            [
+                "--input=" + str(Path("example.toml").absolute()),
+            ],
+        )
+        self.assertEqual(1, count)
+
+
 if __name__ == "__main__":
     unittest.main()
