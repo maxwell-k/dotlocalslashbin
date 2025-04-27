@@ -1,4 +1,9 @@
+#!/usr/bin/env -S uv run
 """Reusable nox sessions for a single file project."""
+# /// script
+# dependencies = ["nox"]
+# requires-python = ">=3.13"
+# ///
 
 from pathlib import Path
 from shutil import rmtree
@@ -87,6 +92,10 @@ def test(session: nox.Session) -> None:
         session.run(PYTHON, "-m", "pytest", external=True)
     else:
         session.skip("No test files in repository")
+
+
+if __name__ == "__main__":
+    nox.main()
 
 
 # noxfile.py / https://github.com/maxwell-k/dotlocalslashbin/blob/main/noxfile.py
