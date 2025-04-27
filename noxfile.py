@@ -68,7 +68,6 @@ def static(session: nox.Session) -> None:
     session.run(
         _BIN / "yamllint",
         "--strict",
-        "--config-file=.yamllint-config-file",
         ".github",
     )
     session.run(
