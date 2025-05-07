@@ -10,8 +10,8 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "^noxfile.py$"
+      "managerFilePatterns": [
+        "/^noxfile.py$/"
       ],
       "depNameTemplate": "pyright",
       "matchStrings": [
