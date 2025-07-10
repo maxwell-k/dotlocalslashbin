@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run
 """Reusable nox sessions for a single file project."""
 # /// script
-# dependencies = ["nox[uv]"]
+# dependencies = ["nox"]
 # requires-python = ">=3.13"
 # ///
 
