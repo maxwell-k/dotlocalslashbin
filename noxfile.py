@@ -24,7 +24,7 @@ def dev(session: Session) -> None:
     session.install("uv")
     metadata = nox.project.load_toml("pyproject.toml")
     session.run("uv", "venv", "--python", metadata["project"]["requires-python"], VENV)
-    env = {"VIRTUAL_ENV": str(VENV)}
+    env = {"VIRTUAL_ENV": VENV}
     session.run("uv", "pip", "install", "--editable", ".[test]", env=env)
 
 
