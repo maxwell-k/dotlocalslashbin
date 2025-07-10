@@ -7,7 +7,6 @@
 
 from pathlib import Path
 from shutil import rmtree
-from typing import cast
 
 import nox
 from nox.sessions import Session
@@ -27,16 +26,6 @@ def dev(session: Session) -> None:
     session.run("uv", "venv", "--python", metadata["project"]["requires-python"], VENV)
     env = {"VIRTUAL_ENV": str(VENV)}
     session.run("uv", "pip", "install", "--editable", ".[test]", env=env)
-
-
-@nox.session(venv_backend="none", requires=["dev"])
-def github_output(session: Session) -> None:
-    """Display outputs for CI integration."""
-    scripts = set(Path("src").glob("*.py")) - set(Path("src").glob("*_test.py"))
-    if len(scripts) > 1:
-        session.error("More than one script found in src/")
-    version = session.run(PYTHON, scripts.pop(), "--version", silent=True)
-    print("version=" + cast("str", version).strip())  # version= adds quotes
 
 
 @nox.session()

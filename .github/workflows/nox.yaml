@@ -18,7 +18,9 @@ jobs:
       - uses: astral-sh/setup-uv@bd01e18f51369d5a26f1651c3cb451d3417e3bba # v6
         with: { python-version: "3.13" }
       - run: ./noxfile.py
-      - run: ./noxfile.py --session=github_output >> "$GITHUB_OUTPUT"
+      - run: >-
+          { printf version= && uv run src/dotlocalslashbin.py --version ; }
+          >> "$GITHUB_OUTPUT"
         id: version
       # yamllint disable-line rule:line-length
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
