@@ -18,10 +18,40 @@ jobs:
       - uses: astral-sh/setup-uv@bd01e18f51369d5a26f1651c3cb451d3417e3bba # v6
         with: { python-version: "3.13" }
       - run: ./noxfile.py
-      - run: >-
-          { printf version= && uv run src/dotlocalslashbin.py --version ; }
-          >> "$GITHUB_OUTPUT"
-        id: version
+      - id: version
+        shell: python
+        run: |
+          #!/usr/bin/env python3
+          """Write the version number to GITHUB_OUTPUT."""
+
+          from os import environ
+          from pathlib import Path
+
+          START = '__version__ = "'
+          END = '"'
+          FORMAT = "version={}\n"
+          OUTPUT = Path(environ.get("GITHUB_OUTPUT", "github_output.txt"))
+
+
+          for item in Path("src").iterdir():
+              if not item.name.endswith(".py"):
+                  continue
+              if item.name.endswith("_test.py"):
+                  continue
+              break
+          else:
+              msg = "File not found."
+              raise ValueError(msg)
+
+          for line in item.read_text().splitlines():
+              if line.startswith(START) and line.endswith(END):
+                  break
+          else:
+              msg = "Line not found."
+              raise ValueError(msg)
+
+          msg = FORMAT.format(line.removeprefix(START).removesuffix(END))
+          OUTPUT.write_text(msg)
       # yamllint disable-line rule:line-length
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with: { path: dist }

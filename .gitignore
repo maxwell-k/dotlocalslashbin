@@ -1,4 +1,5 @@
 /.en.utf-8.add.spl
 /.venv/
 /dist/
+/github_output.txt
 __pycache__
