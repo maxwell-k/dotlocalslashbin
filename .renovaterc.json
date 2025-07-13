@@ -13,9 +13,8 @@
       "managerFilePatterns": [
         "noxfile.py"
       ],
-      "depNameTemplate": "pyright",
       "matchStrings": [
-        "\\\"pyright@(?<currentValue>.+?)\\\""
+        "\\\"(?<depName>.+?)@(?<currentValue>.+?)\\\""
       ],
       "datasourceTemplate": "npm"
     }
