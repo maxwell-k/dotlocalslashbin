@@ -18,10 +18,9 @@ PYTHON = Path().absolute() / VENV / "bin" / "python"
 DIST = Path("dist")
 
 
-@nox.session()
+@nox.session(venv_backend="none")
 def dev(session: Session) -> None:
     """Set up a development environment (virtual environment)."""
-    session.install("uv")
     metadata = nox.project.load_toml("pyproject.toml")
     session.run("uv", "venv", "--python", metadata["project"]["requires-python"], VENV)
     env = {"VIRTUAL_ENV": VENV}
@@ -55,11 +54,10 @@ def static(session: Session) -> None:
         "--yes",
         "--",
         f"--pythonpath={PYTHON}",
-        external=True,
     )
 
     def run(cmd: str) -> None:
-        session.run(PYTHON, "-m", *cmd.split(), external=True)
+        session.run(PYTHON, "-m", *cmd.split())
 
     run("reuse lint")
     run("usort check src noxfile.py")
