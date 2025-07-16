@@ -53,6 +53,12 @@ ignore = [
   "T201", # print is used for output in command line scripts
 ]
 
+[tool.usort]
+excludes = [
+  "/.venv/",
+  "/.nox/",
+]
+
 # pyproject.toml
 # SPDX-FileCopyrightText: 2024 Keith Maxwell <keith.maxwell@gmail.com>
 # SPDX-License-Identifier: CC0-1.0
