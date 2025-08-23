@@ -40,24 +40,24 @@ Command to install the latest released `dotlocalslashbin` from PyPI:
 Command to run latest development version of `dotlocalslashbin` directly from
 GitHub:
 
-    uv run https://raw.githubusercontent.com/maxwell-k/dotlocalslashbin/refs/heads/main/src/dotlocalslashbin.py --version
+    uv tool run git+https://github.com/maxwell-k/dotlocalslashbin --version
 
-## Examples
+## Example
 
-For example to download `yq` to the current working directory, first save the
-following as `yq.toml`, then install with uv (above) and then run the command
-below:
+For example to download `tofu` to the current working directory, first save the
+following as `tofu.toml` then run the command below.
 
 ```
-[yq]
-expected = "cfbbb9ba72c9402ef4ab9d8f843439693dfb380927921740e51706d90869c7e1"
-url = "https://github.com/mikefarah/yq/releases/download/v4.43.1/yq_linux_amd64"
-version = "--version"
+[tofu]
+url = "https://github.com/opentofu/opentofu/releases/download/v1.10.3/tofu_1.10.3_linux_amd64.zip"
+expected = "acf330602ec6ae29ba68dd5d8eb1f645811ae9809231ecdccd4774b21d5c79bc"
+version = "version"
+ignore = ["LICENSE", "README.md", "CHANGELOG.md"]
 ```
 
 Command:
 
-    dotlocalslashbin --input=yq.toml --output=.
+    uv tool run dotlocalslashbin --input=tofu.toml --output=.
 
 Further examples are available in files like `linux-amd64.toml` and
 `github.toml` in the `bin` directory of
