@@ -59,8 +59,9 @@ Command:
 
     dotlocalslashbin --input=yq.toml --output=.
 
-Further examples are available in
-[`bin.toml` in maxwell-k/dotfiles](https://github.com/maxwell-k/dotfiles/blob/main/bin.toml).
+Further examples are available in files like `linux-amd64.toml` and
+`github.toml` in the `bin` directory of
+[maxwell-k/dotfiles](https://github.com/maxwell-k/dotfiles/).
 
 ## See also
 
