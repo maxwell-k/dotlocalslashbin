@@ -32,7 +32,12 @@ class TestReadme(unittest.TestCase):
                 check=False,
                 capture_output=True,
             )
-            self.assertEqual(0, completed.returncode)
+
+        msg = None
+        if completed.stderr:
+            decoded = completed.stderr.decode()
+            msg = f"Return code incorrect.\n\nOutput to standard error:\n\n {decoded}"
+        self.assertEqual(0, completed.returncode, msg=msg)
 
 
 class TestCache(unittest.TestCase):
