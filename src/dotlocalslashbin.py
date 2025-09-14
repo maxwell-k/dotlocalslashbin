@@ -24,7 +24,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-__version__ = "0.0.23"
+__version__ = "0.0.24"
 
 _CACHE = Path("~/.cache/dotlocalslashbin/")
 _HOME = str(Path("~").expanduser())
