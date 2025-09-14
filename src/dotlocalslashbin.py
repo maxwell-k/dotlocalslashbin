@@ -175,9 +175,9 @@ def _download(item: Item) -> None:
 def _untar(item: Item) -> None:
     with tarfile.open(item.downloaded, "r") as file:
         for member in file.getmembers():
-            if member.path in item.ignore:
+            if member.name in item.ignore:
                 continue
-            member.path = member.path.removeprefix(item.prefix)
+            member.name = member.name.removeprefix(item.prefix)
             try:
                 file.extract(member, path=item.target.parent, filter="tar")
             except TypeError:  # before 3.11.4 e.g. Debian 12
