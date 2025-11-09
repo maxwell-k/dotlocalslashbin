@@ -101,7 +101,7 @@ def main() -> int:
         prompt = "#" if item.version else "$"
         print(" ".join((prompt, arg0.replace(_HOME, "~"), item.version)))
         if item.version:
-            run([arg0, item.version], check=True)
+            run([arg0, *split(item.version)], check=True)
         print()
 
     return 0
