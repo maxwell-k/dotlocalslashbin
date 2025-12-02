@@ -185,7 +185,7 @@ def _untar(item: Item) -> None:
 
 
 def _guess_action(item: Item) -> Action:
-    if item.url.endswith((".tar.gz", ".tar")):
+    if item.url.endswith((".tar.xz", ".tar.gz", ".tar")):
         guess = Action.untar
     elif item.url.endswith(".zip"):
         guess = Action.unzip
