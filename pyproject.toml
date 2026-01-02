@@ -12,7 +12,7 @@ classifiers = [
   "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
 ]
 license = { file = "LICENSES/MPL-2.0.txt" }
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 
 [project.urls]
 Home = "https://github.com/maxwell-k/dotlocalslashbin/"
