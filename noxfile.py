@@ -2,7 +2,7 @@
 """Reusable nox sessions for a single file project."""
 # /// script
 # dependencies = ["nox"]
-# requires-python = ">=3.13"
+# requires-python = ">=3.11"
 # ///
 
 from pathlib import Path
