@@ -133,8 +133,8 @@ def _process(item: Item) -> None:
     elif item.action == Action.untar:
         _untar(item)
     elif item.action == Action.command and item.command is not None:
-        kwargs = {"target": item.target, "downloaded": item.downloaded}
-        run(split(item.command.format(**kwargs)), check=True)
+        cmd = item.command.format(target=item.target, downloaded=item.downloaded)
+        run(split(cmd), check=True)
 
     if not item.target.is_symlink():
         item.target.chmod(item.target.stat().st_mode | S_IEXEC)
