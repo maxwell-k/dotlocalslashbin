@@ -7,6 +7,7 @@
 # dependencies = []
 # ///
 """Download and extract files to `~/.local/bin/`."""
+import gzip
 import tarfile
 from argparse import ArgumentParser, BooleanOptionalAction, Namespace
 from dataclasses import dataclass
@@ -14,7 +15,7 @@ from enum import Enum
 from hashlib import file_digest
 from pathlib import Path
 from shlex import split
-from shutil import copy
+from shutil import copy, copyfileobj
 from stat import S_IEXEC
 from subprocess import run
 from tomllib import load
@@ -38,7 +39,7 @@ class _CustomNamespace(Namespace):
     cache: Path
 
 
-Action = Enum("Action", ["command", "copy", "symlink", "untar", "unzip"])
+Action = Enum("Action", ["command", "copy", "gunzip", "symlink", "untar", "unzip"])
 
 
 @dataclass(init=False)
@@ -168,6 +169,9 @@ def _action(item: Item) -> None:
     elif item.action == Action.unzip:
         with ZipFile(item.downloaded, "r") as file:
             file.extract(item.target.name, path=item.target.parent)
+    elif item.action == Action.gunzip:
+        with gzip.open(item.downloaded, "r") as fsrc, item.target.open("wb") as fdst:
+            copyfileobj(fsrc, fdst)
     elif item.action == Action.untar:
         with tarfile.open(item.downloaded, "r") as file:
             for member in file.getmembers():
@@ -186,6 +190,8 @@ def _action(item: Item) -> None:
 def _guess_action(item: Item) -> Action:
     if item.url.endswith((".tar.xz", ".tar.gz", ".tar")):
         guess = Action.untar
+    elif item.url.endswith((".gz",)):
+        guess = Action.gunzip
     elif item.url.endswith(".zip"):
         guess = Action.unzip
     elif item.url.startswith("/"):
