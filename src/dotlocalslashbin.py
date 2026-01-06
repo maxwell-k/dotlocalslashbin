@@ -123,19 +123,7 @@ def _process(item: Item) -> None:
 
     item.target.parent.mkdir(parents=True, exist_ok=True)
     item.target.unlink(missing_ok=True)
-    if item.action == Action.copy:
-        copy(item.downloaded, item.target)
-    elif item.action == Action.symlink:
-        item.target.symlink_to(item.downloaded)
-    elif item.action == Action.unzip:
-        with ZipFile(item.downloaded, "r") as file:
-            file.extract(item.target.name, path=item.target.parent)
-    elif item.action == Action.untar:
-        _untar(item)
-    elif item.action == Action.command and item.command is not None:
-        cmd = item.command.format(target=item.target, downloaded=item.downloaded)
-        run(split(cmd), check=True)
-
+    _action(item)
     if not item.target.is_symlink():
         item.target.chmod(item.target.stat().st_mode | S_IEXEC)
 
@@ -172,16 +160,27 @@ def _download(item: Item) -> None:
         raise RuntimeError(msg)
 
 
-def _untar(item: Item) -> None:
-    with tarfile.open(item.downloaded, "r") as file:
-        for member in file.getmembers():
-            if member.name in item.ignore:
-                continue
-            member.name = member.name.removeprefix(item.prefix)
-            try:
-                file.extract(member, path=item.target.parent, filter="tar")
-            except TypeError:  # before 3.11.4 e.g. Debian 12
-                file.extract(member, path=item.target.parent)
+def _action(item: Item) -> None:
+    if item.action == Action.copy:
+        copy(item.downloaded, item.target)
+    elif item.action == Action.symlink:
+        item.target.symlink_to(item.downloaded)
+    elif item.action == Action.unzip:
+        with ZipFile(item.downloaded, "r") as file:
+            file.extract(item.target.name, path=item.target.parent)
+    elif item.action == Action.untar:
+        with tarfile.open(item.downloaded, "r") as file:
+            for member in file.getmembers():
+                if member.name in item.ignore:
+                    continue
+                member.name = member.name.removeprefix(item.prefix)
+                try:
+                    file.extract(member, path=item.target.parent, filter="tar")
+                except TypeError:  # before 3.11.4 e.g. Debian 12
+                    file.extract(member, path=item.target.parent)
+    elif item.action == Action.command and item.command is not None:
+        cmd = item.command.format(target=item.target, downloaded=item.downloaded)
+        run(split(cmd), check=True)
 
 
 def _guess_action(item: Item) -> Action:
