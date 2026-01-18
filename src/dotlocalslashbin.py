@@ -7,6 +7,7 @@
 # dependencies = []
 # ///
 """Download and extract files to `~/.local/bin/`."""
+
 import gzip
 import tarfile
 from argparse import ArgumentParser, BooleanOptionalAction, Namespace
@@ -22,7 +23,6 @@ from tomllib import load
 from urllib.error import HTTPError
 from urllib.request import urlopen
 from zipfile import ZipFile
-
 
 __version__ = "0.0.24"
 
