@@ -166,13 +166,18 @@ def _action(item: Item) -> None:
         copy(item.downloaded, item.target)
     elif item.action == Action.symlink:
         item.target.symlink_to(item.downloaded)
-    elif item.action == Action.unzip:
-        with ZipFile(item.downloaded, "r") as file:
-            file.extract(item.target.name, path=item.target.parent)
     elif item.action == Action.gunzip:
         with gzip.open(item.downloaded, "r") as fsrc, item.target.open("wb") as fdst:
             copyfileobj(fsrc, fdst)
-    elif item.action == Action.untar:
+    elif item.action in (Action.unzip, Action.untar):
+        _many_files(item)
+    elif item.action == Action.command and item.command is not None:
+        cmd = item.command.format(target=item.target, downloaded=item.downloaded)
+        run(split(cmd), check=True)
+
+
+def _many_files(item: Item) -> None:
+    if item.action == Action.untar:
         with tarfile.open(item.downloaded, "r") as file:
             for member in file.getmembers():
                 if member.name in item.ignore:
@@ -182,9 +187,10 @@ def _action(item: Item) -> None:
                     file.extract(member, path=item.target.parent, filter="tar")
                 except TypeError:  # before 3.11.4 e.g. Debian 12
                     file.extract(member, path=item.target.parent)
-    elif item.action == Action.command and item.command is not None:
-        cmd = item.command.format(target=item.target, downloaded=item.downloaded)
-        run(split(cmd), check=True)
+    else:
+        with ZipFile(item.downloaded, "r") as file:
+            for member in file.infolist():
+                file.extract(member, path=item.target.parent)
 
 
 def _guess_action(item: Item) -> Action:
