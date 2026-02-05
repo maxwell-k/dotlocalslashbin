@@ -177,10 +177,18 @@ def _action(item: Item) -> None:
 
 
 def _many_files(item: Item) -> None:
+    """Unzip or untar an item.
+
+    These two actions should respect 'ignore' and 'prefix' similarly.
+    """
+
+    def _should_continue(filename: str) -> bool:
+        return filename in item.ignore
+
     if item.action == Action.untar:
         with tarfile.open(item.downloaded, "r") as file:
             for member in file.getmembers():
-                if member.name in item.ignore:
+                if _should_continue(member.name):
                     continue
                 member.name = member.name.removeprefix(item.prefix)
                 try:
@@ -190,6 +198,8 @@ def _many_files(item: Item) -> None:
     else:
         with ZipFile(item.downloaded, "r") as file:
             for member in file.infolist():
+                if _should_continue(member.filename):
+                    continue
                 member.filename = member.filename.removeprefix(item.prefix)
                 file.extract(member, path=item.target.parent)
 

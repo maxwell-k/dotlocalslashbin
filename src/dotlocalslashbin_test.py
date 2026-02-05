@@ -127,17 +127,14 @@ class TestInputs(unittest.TestCase):
             _input = source / "input.toml"
             _input.write_text('[a]\nurl = "https://example.com/a.zip"\n')
 
-            run(
-                [
-                    executable,
-                    Path("src/dotlocalslashbin.py").absolute(),
-                    f"--output={output}",
-                    f"--cache={cache}",
-                    f"--input={_input}",
-                ],
-                check=True,
-                capture_output=True,
-            )
+            args = [
+                executable,
+                str(Path("src/dotlocalslashbin.py").absolute()),
+                f"--output={output}",
+                f"--cache={cache}",
+                f"--input={_input}",
+            ]
+            run(args, check=True, capture_output=True)
 
             self.assertEqual(output.joinpath("a").read_text(), "hello world")
 
@@ -196,23 +193,56 @@ class TestInputs(unittest.TestCase):
                 _zip.write(a, arcname="b/" + a.name)
 
             _input = source / "input.toml"
-            _input.write_text(
-                "[a]\n" 'url = "https://example.com/a.zip"\n' 'prefix = "b"\n'
-            )
+            _input.write_text('[a]\nurl = "https://example.com/a.zip"\nprefix = "b"\n')
 
-            run(
-                [
-                    executable,
-                    Path("src/dotlocalslashbin.py").absolute(),
-                    f"--output={output}",
-                    f"--cache={cache}",
-                    f"--input={_input}",
-                ],
-                check=True,
-                capture_output=True,
-            )
+            args = [
+                executable,
+                str(Path("src/dotlocalslashbin.py").absolute()),
+                f"--output={output}",
+                f"--cache={cache}",
+                f"--input={_input}",
+            ]
+            run(args, check=True, capture_output=True)
 
             self.assertEqual(output.joinpath("a").read_text(), "hello world")
+
+    def test_zip_file_ignore(self) -> None:
+        """Teset the ignore feature."""
+        with (
+            TemporaryDirectory(prefix="source_") as _source,
+            TemporaryDirectory(prefix="cache_") as _cache,
+            TemporaryDirectory(prefix="output_") as _output,
+        ):
+            source = Path(_source)
+            cache = Path(_cache)
+            output = Path(_output)
+
+            a = source / "a"
+            a.write_text("hello world")
+            b = source / "b"
+            b.write_text("hello world")
+
+            zip_path = cache / "a.zip"
+            with zipfile.ZipFile(zip_path, "w") as _zip:
+                _zip.write(a, arcname=a.name)
+                _zip.write(b, arcname=b.name)
+
+            _input = source / "input.toml"
+            _input.write_text(
+                '[a]\nurl = "https://example.com/a.zip"\nignore = ["b"]\n',
+            )
+
+            args = [
+                executable,
+                str(Path("src/dotlocalslashbin.py").absolute()),
+                f"--output={output}",
+                f"--cache={cache}",
+                f"--input={_input}",
+            ]
+            run(args, check=True, capture_output=True)
+
+            self.assertEqual(output.joinpath("a").read_text(), "hello world")
+            self.assertFalse(output.joinpath("b").exists(), "b should not exist")
 
 
 if __name__ == "__main__":
