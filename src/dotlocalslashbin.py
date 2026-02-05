@@ -24,7 +24,7 @@ from urllib.error import HTTPError
 from urllib.request import urlopen
 from zipfile import ZipFile, ZipInfo
 
-__version__ = "0.0.25"
+__version__ = "0.0.26"
 
 _CACHE = Path("~/.cache/dotlocalslashbin/")
 _HOME = str(Path("~").expanduser())
