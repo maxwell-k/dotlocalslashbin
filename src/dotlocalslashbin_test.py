@@ -32,13 +32,14 @@ class TestReadme(unittest.TestCase):
         stop = lines.index(marker, start)
         fixture = "\n".join(lines[start:stop])
         with TemporaryDirectory() as tmpdirname:
-            Path(tmpdirname).joinpath("bin.toml").write_text(fixture)
-            completed = run(
-                [executable, Path("src/dotlocalslashbin.py").absolute(), "--output=."],
-                cwd=tmpdirname,
-                check=False,
-                capture_output=True,
-            )
+            Path(tmpdirname).joinpath("example.toml").write_text(fixture)
+            args = [
+                executable,
+                str(Path("src/dotlocalslashbin.py").absolute()),
+                "--output=.",
+                "example.toml",
+            ]
+            completed = run(args, cwd=tmpdirname, check=False, capture_output=True)
 
         msg = None
         if completed.stderr:
@@ -57,10 +58,10 @@ class TestCache(unittest.TestCase):
                 [
                     executable,
                     Path("src/dotlocalslashbin.py").absolute(),
-                    "--input=" + str(EXAMPLE_1),
                     f"--output={output}",
                     f"--cache={cache}",
                     *extra,
+                    str(EXAMPLE_1),
                 ],
                 check=True,
                 capture_output=True,
@@ -104,12 +105,12 @@ class TestInputs(unittest.TestCase):
     def test_one(self) -> None:
         """Check one input results in one output."""
         for i in EXAMPLE_1, EXAMPLE_2:
-            count = self._execute(["--input=" + str(i)])
+            count = self._execute([str(i)])
             self.assertEqual(1, count)
 
     def test_both(self) -> None:
         """Check that two input files together result in two outputs."""
-        count = self._execute(["--input=" + str(i) for i in [EXAMPLE_1, EXAMPLE_2]])
+        count = self._execute([str(i) for i in [EXAMPLE_1, EXAMPLE_2]])
         self.assertEqual(2, count)
 
 
@@ -126,7 +127,7 @@ def call(toml: str, cache: Path) -> Iterator[Path]:
     with _directory("input_") as directory, _directory("output_") as output:
         _input = directory / "input.toml"
         _input.write_text(toml)
-        args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
+        args = [f"--output={output}", f"--cache={cache}", f"{_input}"]
         with Path(os.devnull).open("w") as f, contextlib.redirect_stdout(f):
             main(args)
         yield output

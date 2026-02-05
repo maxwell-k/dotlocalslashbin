@@ -8,27 +8,26 @@
 # ///
 """Download and extract files to `~/.local/bin/`."""
 
-import gzip
-import tarfile
 from argparse import ArgumentParser, BooleanOptionalAction, Namespace
 from dataclasses import dataclass
 from enum import Enum
+from gzip import GzipFile
 from hashlib import file_digest
 from pathlib import Path
 from shlex import split
 from shutil import copy, copyfileobj
 from stat import S_IEXEC
 from subprocess import run
+from tarfile import open as tar_open, TarFile, TarInfo
 from tomllib import load
 from urllib.error import HTTPError
 from urllib.request import urlopen
-from zipfile import ZipFile
+from zipfile import ZipFile, ZipInfo
 
 __version__ = "0.0.25"
 
 _CACHE = Path("~/.cache/dotlocalslashbin/")
 _HOME = str(Path("~").expanduser())
-_INPUT = "bin.toml"
 _OUTPUT = Path("~/.local/bin/")
 _SHA512_LENGTH = 128
 
@@ -44,7 +43,7 @@ Action = Enum("Action", ["command", "copy", "gunzip", "symlink", "untar", "unzip
 
 @dataclass(init=False)
 class Item:
-    """Class for an application."""
+    """Class for an artifact listed in input."""
 
     name: str
     url: str
@@ -134,23 +133,17 @@ def _process(item: Item) -> None:
 
 
 def _parse_args(args: list[str] | None) -> _CustomNamespace:
-    parser = ArgumentParser(
-        prog=Path(__file__).name,
-        epilog="¹ --input can be specified multiple times",
-    )
+    parser = ArgumentParser(prog=Path(__file__).name)
     parser.add_argument("--version", action="version", version=__version__)
-    help_ = f"TOML specification (default: {_INPUT})¹"
-    parser.add_argument("--input", action="append", help=help_, type=Path)
     help_ = f"Target directory (default: {_OUTPUT})"
     parser.add_argument("--output", default=_OUTPUT, help=help_, type=Path)
     help_ = f"Cache directory (default: {_CACHE})"
     parser.add_argument("--cache", default=_CACHE, help=help_, type=Path)
     help_ = "Clear the cache directory first (default: --no-clear)"
     parser.add_argument("--clear", action=BooleanOptionalAction, help=help_)
-    result = parser.parse_args(args, namespace=_CustomNamespace())
-    if not result.input:
-        result.input = [Path(_INPUT)]
-    return result
+    help_ = "input specification in TOML"
+    parser.add_argument("input", nargs="+", help=help_, type=Path)
+    return parser.parse_args(args, namespace=_CustomNamespace())
 
 
 def _download(item: Item) -> None:
@@ -171,7 +164,7 @@ def _action(item: Item) -> None:
     elif item.action == Action.symlink:
         item.target.symlink_to(item.downloaded)
     elif item.action == Action.gunzip:
-        with gzip.open(item.downloaded, "r") as fsrc, item.target.open("wb") as fdst:
+        with GzipFile(item.downloaded, "r") as fsrc, item.target.open("wb") as fdst:
             copyfileobj(fsrc, fdst)
     elif item.action in (Action.unzip, Action.untar):
         _many_files(item)
@@ -195,8 +188,10 @@ def _many_files(item: Item) -> None:
             ],
         )
 
+    file: TarFile | ZipFile
+    member: TarInfo | ZipInfo
     if item.action == Action.untar:
-        with tarfile.open(item.downloaded, "r") as file:
+        with tar_open(item.downloaded, "r") as file:
             for member in file.getmembers():
                 if _should_continue(member.name):
                     continue

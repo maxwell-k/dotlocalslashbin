@@ -57,7 +57,7 @@ ignore = ["LICENSE", "README.md", "CHANGELOG.md"]
 
 Command:
 
-    uv tool run dotlocalslashbin --input=tofu.toml --output=.
+    uv tool run dotlocalslashbin --output=. tofu.toml
 
 Further examples are available in files like `linux-amd64.toml` and
 `github.toml` in the `bin` directory of
