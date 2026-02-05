@@ -8,6 +8,8 @@ import contextlib
 import os
 import unittest
 import zipfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from subprocess import run
 from sys import executable
@@ -17,12 +19,6 @@ from dotlocalslashbin import main
 
 EXAMPLE_1 = Path("examples/1.toml").absolute()
 EXAMPLE_2 = Path("examples/2.toml").absolute()
-
-
-def silent(args: list[str]) -> None:
-    """Call main with stdout redirected to devnull."""
-    with Path(os.devnull).open("w") as f, contextlib.redirect_stdout(f):
-        main(args)
 
 
 class TestReadme(unittest.TestCase):
@@ -116,17 +112,32 @@ class TestInputs(unittest.TestCase):
         count = self._execute(["--input=" + str(i) for i in [EXAMPLE_1, EXAMPLE_2]])
         self.assertEqual(2, count)
 
-    def test_zip_file(self) -> None:
-        """Create a zip with one file."""
-        with (
-            TemporaryDirectory(prefix="source_") as _source,
-            TemporaryDirectory(prefix="cache_") as _cache,
-            TemporaryDirectory(prefix="output_") as _output,
-        ):
-            cache = Path(_cache)
-            source = Path(_source)
-            output = Path(_output)
 
+@contextmanager
+def _directory(prefix: str) -> Iterator[Path]:
+    """Create a temporary directory with a prefix."""
+    with TemporaryDirectory(prefix=prefix) as directory:
+        yield Path(directory)
+
+
+@contextmanager
+def call(toml: str, cache: Path) -> Iterator[Path]:
+    """Wrap main yielding a temporary output directory."""
+    with _directory("input_") as directory, _directory("output_") as output:
+        _input = directory / "input.toml"
+        _input.write_text(toml)
+        args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
+        with Path(os.devnull).open("w") as f, contextlib.redirect_stdout(f):
+            main(args)
+        yield output
+
+
+class TestZip(unittest.TestCase):
+    """Test the main function when input is a single zip file."""
+
+    def test_basic(self) -> None:
+        """Process a zip with one file."""
+        with _directory("source_") as source, _directory("cache_") as cache:
             a = source / "a"
             a.write_text("hello world")
 
@@ -134,25 +145,14 @@ class TestInputs(unittest.TestCase):
             with zipfile.ZipFile(zip_path, "w") as _zip:
                 _zip.write(a, arcname=a.name)
 
-            _input = source / "input.toml"
-            _input.write_text('[a]\nurl = "https://example.com/a.zip"\n')
+            toml = '[a]\nurl = "https://example.com/a.zip"\n'
 
-            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
-            silent(args)
+            with call(toml, cache) as output:
+                self.assertEqual(output.joinpath("a").read_text(), "hello world")
 
-            self.assertEqual(output.joinpath("a").read_text(), "hello world")
-
-    def test_zip_file_with_prefix(self) -> None:
-        """Create a zip with one file in a prefix."""
-        with (
-            TemporaryDirectory(prefix="source_") as _source,
-            TemporaryDirectory(prefix="cache_") as _cache,
-            TemporaryDirectory(prefix="output_") as _output,
-        ):
-            cache = Path(_cache)
-            source = Path(_source)
-            output = Path(_output)
-
+    def test_prefix(self) -> None:
+        """Process a zip with one file in a prefix."""
+        with _directory("source_") as source, _directory("cache_") as cache:
             a = source / "a"
             a.write_text("hello world")
 
@@ -161,25 +161,14 @@ class TestInputs(unittest.TestCase):
                 _zip.writestr("b/", "")
                 _zip.write(a, arcname="b/" + a.name)
 
-            _input = source / "input.toml"
-            _input.write_text('[a]\nurl = "https://example.com/a.zip"\nprefix = "b/"\n')
+            toml = '[a]\nurl = "https://example.com/a.zip"\nprefix = "b/"\n'
 
-            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
-            silent(args)
+            with call(toml, cache) as output:
+                self.assertEqual(output.joinpath("a").read_text(), "hello world")
 
-            self.assertEqual(output.joinpath("a").read_text(), "hello world")
-
-    def test_zip_file_two_files(self) -> None:
-        """Create a zip with one file name differently."""
-        with (
-            TemporaryDirectory(prefix="source_") as _source,
-            TemporaryDirectory(prefix="cache_") as _cache,
-            TemporaryDirectory(prefix="output_") as _output,
-        ):
-            source = Path(_source)
-            cache = Path(_cache)
-            output = Path(_output)
-
+    def test_two_files(self) -> None:
+        """Process a zip with two files."""
+        with _directory("source_") as source, _directory("cache_") as cache:
             a = source / "a"
             a.write_text("hello world")
             b = source / "b"
@@ -190,26 +179,15 @@ class TestInputs(unittest.TestCase):
                 _zip.write(a, arcname=a.name)
                 _zip.write(b, arcname=b.name)
 
-            _input = source / "input.toml"
-            _input.write_text('[a]\nurl = "https://example.com/a.zip"\n')
+            toml = '[a]\nurl = "https://example.com/a.zip"\n'
 
-            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
-            silent(args)
+            with call(toml, cache) as output:
+                self.assertEqual(output.joinpath("a").read_text(), "hello world")
+                self.assertEqual(output.joinpath("b").read_text(), "hello world")
 
-            self.assertEqual(output.joinpath("a").read_text(), "hello world")
-            self.assertEqual(output.joinpath("b").read_text(), "hello world")
-
-    def test_zip_file_with_prefix_no_trailing_slash(self) -> None:
-        """Create a zip with one file in a prefix."""
-        with (
-            TemporaryDirectory(prefix="source_") as _source,
-            TemporaryDirectory(prefix="cache_") as _cache,
-            TemporaryDirectory(prefix="output_") as _output,
-        ):
-            cache = Path(_cache)
-            source = Path(_source)
-            output = Path(_output)
-
+    def test_prefix_no_trailing_slash(self) -> None:
+        """Process a zip file with a prefix with no trailing slash."""
+        with _directory("source_") as source, _directory("cache_") as cache:
             a = source / "a"
             a.write_text("hello world")
 
@@ -217,25 +195,14 @@ class TestInputs(unittest.TestCase):
             with zipfile.ZipFile(zip_path, "w") as _zip:
                 _zip.write(a, arcname="b/" + a.name)
 
-            _input = source / "input.toml"
-            _input.write_text('[a]\nurl = "https://example.com/a.zip"\nprefix = "b"\n')
+            toml = '[a]\nurl = "https://example.com/a.zip"\nprefix = "b"\n'
 
-            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
-            silent(args)
+            with call(toml, cache) as output:
+                self.assertEqual(output.joinpath("a").read_text(), "hello world")
 
-            self.assertEqual(output.joinpath("a").read_text(), "hello world")
-
-    def test_zip_file_second_file_outside_prefix(self) -> None:
-        """Create a zip with one file in a prefix."""
-        with (
-            TemporaryDirectory(prefix="source_") as _source,
-            TemporaryDirectory(prefix="cache_") as _cache,
-            TemporaryDirectory(prefix="output_") as _output,
-        ):
-            cache = Path(_cache)
-            source = Path(_source)
-            output = Path(_output)
-
+    def test_file_outside_prefix(self) -> None:
+        """Process a zip with a file outside the prefix."""
+        with _directory("source_") as source, _directory("cache_") as cache:
             a = source / "a"
             a.write_text("hello world")
             c = source / "c"
@@ -246,26 +213,15 @@ class TestInputs(unittest.TestCase):
                 _zip.write(a, arcname="b/" + a.name)
                 _zip.write(c, arcname=c.name)
 
-            _input = source / "input.toml"
-            _input.write_text('[a]\nurl = "https://example.com/a.zip"\nprefix = "b"\n')
+            toml = '[a]\nurl = "https://example.com/a.zip"\nprefix = "b"\n'
 
-            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
-            silent(args)
+            with call(toml, cache) as output:
+                self.assertEqual(output.joinpath("a").read_text(), "hello world")
+                self.assertEqual(sum(1 for _ in output.iterdir()), 1)
 
-            self.assertEqual(output.joinpath("a").read_text(), "hello world")
-            self.assertEqual(sum(1 for _ in output.iterdir()), 1)
-
-    def test_zip_file_ignore(self) -> None:
-        """Teset the ignore feature."""
-        with (
-            TemporaryDirectory(prefix="source_") as _source,
-            TemporaryDirectory(prefix="cache_") as _cache,
-            TemporaryDirectory(prefix="output_") as _output,
-        ):
-            source = Path(_source)
-            cache = Path(_cache)
-            output = Path(_output)
-
+    def test_ignore(self) -> None:
+        """Process an input that uses the ignore feature."""
+        with _directory("source_") as source, _directory("cache_") as cache:
             a = source / "a"
             a.write_text("hello world")
             b = source / "b"
@@ -276,16 +232,11 @@ class TestInputs(unittest.TestCase):
                 _zip.write(a, arcname=a.name)
                 _zip.write(b, arcname=b.name)
 
-            _input = source / "input.toml"
-            _input.write_text(
-                '[a]\nurl = "https://example.com/a.zip"\nignore = ["b"]\n',
-            )
+            toml = '[a]\nurl = "https://example.com/a.zip"\nignore = ["b"]\n'
 
-            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
-            silent(args)
-
-            self.assertEqual(output.joinpath("a").read_text(), "hello world")
-            self.assertFalse(output.joinpath("b").exists(), "b should not exist")
+            with call(toml, cache) as output:
+                self.assertEqual(output.joinpath("a").read_text(), "hello world")
+                self.assertEqual(sum(1 for _ in output.iterdir()), 1)
 
 
 if __name__ == "__main__":
