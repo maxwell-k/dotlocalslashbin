@@ -238,6 +238,22 @@ class TestZip(unittest.TestCase):
                 self.assertEqual(output.joinpath("a").read_text(), "hello world")
                 self.assertEqual(sum(1 for _ in output.iterdir()), 1)
 
+    def test_name_is_not_a_file(self) -> None:
+        """Process an input with a name that doesn't match a file."""
+        with _directory("source_") as source, _directory("cache_") as cache:
+            a = source / "a"
+            a.write_text("hello world")
+
+            zip_path = cache / "a.zip"
+            with zipfile.ZipFile(zip_path, "w") as _zip:
+                _zip.write(a, arcname=a.name)
+
+            toml = '[b]\nurl = "https://example.com/a.zip"\n'
+
+            with call(toml, cache) as output:
+                self.assertEqual(output.joinpath("a").read_text(), "hello world")
+                self.assertEqual(sum(1 for _ in output.iterdir()), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

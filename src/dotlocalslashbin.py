@@ -100,7 +100,11 @@ def main(_args: list[str] | None = None) -> int:
 
         arg0 = str(item.target.absolute())
         prompt = "#" if item.version else "$"
-        print(" ".join((prompt, arg0.replace(_HOME, "~"), item.version)))
+        if item.target.exists():
+            print(" ".join((prompt, arg0.replace(_HOME, "~"), item.version)))
+        else:
+            destination = str(item.target.parent).replace(_HOME, "~")
+            print(f"$ {destination} now contains {item.name}")
         if item.version:
             run([arg0, *split(item.version)], check=True)
         print()
@@ -125,7 +129,7 @@ def _process(item: Item) -> None:
     item.target.parent.mkdir(parents=True, exist_ok=True)
     item.target.unlink(missing_ok=True)
     _action(item)
-    if not item.target.is_symlink():
+    if item.target.exists() and not item.target.is_symlink():
         item.target.chmod(item.target.stat().st_mode | S_IEXEC)
 
 
