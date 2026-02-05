@@ -142,6 +142,33 @@ class TestInputs(unittest.TestCase):
 
             self.assertEqual(output.joinpath("a").read_text(), "hello world")
 
+    def test_zip_file_with_prefix(self) -> None:
+        """Create a zip with one file in a prefix."""
+        with (
+            TemporaryDirectory(prefix="source_") as _source,
+            TemporaryDirectory(prefix="cache_") as _cache,
+            TemporaryDirectory(prefix="output_") as _output,
+        ):
+            cache = Path(_cache)
+            source = Path(_source)
+            output = Path(_output)
+
+            a = source / "a"
+            a.write_text("hello world")
+
+            zip_path = cache / "a.zip"
+            with zipfile.ZipFile(zip_path, "w") as _zip:
+                _zip.writestr("b/", "")
+                _zip.write(a, arcname="b/" + a.name)
+
+            _input = source / "input.toml"
+            _input.write_text('[a]\nurl = "https://example.com/a.zip"\nprefix = "b/"\n')
+
+            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
+            silent(args)
+
+            self.assertEqual(output.joinpath("a").read_text(), "hello world")
+
     def test_zip_file_two_files(self) -> None:
         """Create a zip with one file name differently."""
         with (
@@ -172,7 +199,7 @@ class TestInputs(unittest.TestCase):
             self.assertEqual(output.joinpath("a").read_text(), "hello world")
             self.assertEqual(output.joinpath("b").read_text(), "hello world")
 
-    def test_zip_file_with_prefix(self) -> None:
+    def test_zip_file_with_prefix_no_trailing_slash(self) -> None:
         """Create a zip with one file in a prefix."""
         with (
             TemporaryDirectory(prefix="source_") as _source,

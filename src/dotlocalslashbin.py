@@ -183,7 +183,12 @@ def _many_files(item: Item) -> None:
     """
 
     def _should_continue(filename: str) -> bool:
-        return filename in item.ignore
+        return any(
+            [
+                filename in item.ignore,
+                filename == item.prefix,
+            ],
+        )
 
     if item.action == Action.untar:
         with tarfile.open(item.downloaded, "r") as file:
