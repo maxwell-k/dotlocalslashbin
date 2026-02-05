@@ -187,6 +187,7 @@ def _many_files(item: Item) -> None:
             [
                 filename in item.ignore,
                 filename == item.prefix,
+                item.prefix != "" and not filename.startswith(item.prefix),
             ],
         )
 
