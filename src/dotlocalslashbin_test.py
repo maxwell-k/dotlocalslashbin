@@ -225,6 +225,36 @@ class TestInputs(unittest.TestCase):
 
             self.assertEqual(output.joinpath("a").read_text(), "hello world")
 
+    def test_zip_file_second_file_outside_prefix(self) -> None:
+        """Create a zip with one file in a prefix."""
+        with (
+            TemporaryDirectory(prefix="source_") as _source,
+            TemporaryDirectory(prefix="cache_") as _cache,
+            TemporaryDirectory(prefix="output_") as _output,
+        ):
+            cache = Path(_cache)
+            source = Path(_source)
+            output = Path(_output)
+
+            a = source / "a"
+            a.write_text("hello world")
+            c = source / "c"
+            c.write_text("hello world")
+
+            zip_path = cache / "a.zip"
+            with zipfile.ZipFile(zip_path, "w") as _zip:
+                _zip.write(a, arcname="b/" + a.name)
+                _zip.write(c, arcname=c.name)
+
+            _input = source / "input.toml"
+            _input.write_text('[a]\nurl = "https://example.com/a.zip"\nprefix = "b"\n')
+
+            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
+            silent(args)
+
+            self.assertEqual(output.joinpath("a").read_text(), "hello world")
+            self.assertEqual(sum(1 for _ in output.iterdir()), 1)
+
     def test_zip_file_ignore(self) -> None:
         """Teset the ignore feature."""
         with (
