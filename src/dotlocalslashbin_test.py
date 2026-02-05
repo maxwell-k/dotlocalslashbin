@@ -5,6 +5,7 @@
 """Tests for src/dotlocalslashbin.py."""
 
 import unittest
+import zipfile
 from pathlib import Path
 from subprocess import run
 from sys import executable
@@ -104,6 +105,77 @@ class TestInputs(unittest.TestCase):
         """Check that two input files together result in two outputs."""
         count = self._execute(["--input=" + str(i) for i in [EXAMPLE_1, EXAMPLE_2]])
         self.assertEqual(2, count)
+
+    def test_zip_file(self) -> None:
+        """Create a zip with one file."""
+        with (
+            TemporaryDirectory(prefix="source_") as _source,
+            TemporaryDirectory(prefix="cache_") as _cache,
+            TemporaryDirectory(prefix="output_") as _output,
+        ):
+            cache = Path(_cache)
+            source = Path(_source)
+            output = Path(_output)
+
+            a = source / "a"
+            a.write_text("hello world")
+
+            zip_path = cache / "a.zip"
+            with zipfile.ZipFile(zip_path, "w") as _zip:
+                _zip.write(a, arcname=a.name)
+
+            _input = source / "input.toml"
+            _input.write_text('[a]\nurl = "https://example.com/a.zip"\n')
+
+            run(
+                [
+                    executable,
+                    Path("src/dotlocalslashbin.py").absolute(),
+                    f"--output={output}",
+                    f"--cache={cache}",
+                    f"--input={_input}",
+                ],
+                check=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(output.joinpath("a").read_text(), "hello world")
+
+    def test_zip_file_two_files(self) -> None:
+        """Create a zip with one file name differently."""
+        with (
+            TemporaryDirectory(prefix="source_") as _source,
+            TemporaryDirectory(prefix="cache_") as _cache,
+            TemporaryDirectory(prefix="output_") as _output,
+        ):
+            source = Path(_source)
+            cache = Path(_cache)
+            output = Path(_output)
+
+            a = source / "a"
+            a.write_text("hello world")
+            b = source / "b"
+            b.write_text("hello world")
+
+            zip_path = cache / "a.zip"
+            with zipfile.ZipFile(zip_path, "w") as _zip:
+                _zip.write(a, arcname=a.name)
+                _zip.write(b, arcname=b.name)
+
+            _input = source / "input.toml"
+            _input.write_text('[a]\nurl = "https://example.com/a.zip"\n')
+
+            args = [
+                executable,
+                str(Path("src/dotlocalslashbin.py").absolute()),
+                f"--output={output}",
+                f"--cache={cache}",
+                f"--input={_input}",
+            ]
+            run(args, check=True, capture_output=True)
+
+            self.assertEqual(output.joinpath("a").read_text(), "hello world")
+            self.assertEqual(output.joinpath("b").read_text(), "hello world")
 
 
 if __name__ == "__main__":
