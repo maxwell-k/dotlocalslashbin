@@ -190,6 +190,7 @@ def _many_files(item: Item) -> None:
     else:
         with ZipFile(item.downloaded, "r") as file:
             for member in file.infolist():
+                member.filename = member.filename.removeprefix(item.prefix)
                 file.extract(member, path=item.target.parent)
 
 
