@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: MPL-2.0
 """Tests for src/dotlocalslashbin.py."""
 
+import contextlib
+import os
 import unittest
 import zipfile
 from pathlib import Path
@@ -11,8 +13,16 @@ from subprocess import run
 from sys import executable
 from tempfile import TemporaryDirectory
 
+from dotlocalslashbin import main
+
 EXAMPLE_1 = Path("examples/1.toml").absolute()
 EXAMPLE_2 = Path("examples/2.toml").absolute()
+
+
+def silent(args: list[str]) -> None:
+    """Call main with stdout redirected to devnull."""
+    with Path(os.devnull).open("w") as f, contextlib.redirect_stdout(f):
+        main(args)
 
 
 class TestReadme(unittest.TestCase):
@@ -127,14 +137,8 @@ class TestInputs(unittest.TestCase):
             _input = source / "input.toml"
             _input.write_text('[a]\nurl = "https://example.com/a.zip"\n')
 
-            args = [
-                executable,
-                str(Path("src/dotlocalslashbin.py").absolute()),
-                f"--output={output}",
-                f"--cache={cache}",
-                f"--input={_input}",
-            ]
-            run(args, check=True, capture_output=True)
+            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
+            silent(args)
 
             self.assertEqual(output.joinpath("a").read_text(), "hello world")
 
@@ -162,14 +166,8 @@ class TestInputs(unittest.TestCase):
             _input = source / "input.toml"
             _input.write_text('[a]\nurl = "https://example.com/a.zip"\n')
 
-            args = [
-                executable,
-                str(Path("src/dotlocalslashbin.py").absolute()),
-                f"--output={output}",
-                f"--cache={cache}",
-                f"--input={_input}",
-            ]
-            run(args, check=True, capture_output=True)
+            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
+            silent(args)
 
             self.assertEqual(output.joinpath("a").read_text(), "hello world")
             self.assertEqual(output.joinpath("b").read_text(), "hello world")
@@ -195,14 +193,8 @@ class TestInputs(unittest.TestCase):
             _input = source / "input.toml"
             _input.write_text('[a]\nurl = "https://example.com/a.zip"\nprefix = "b"\n')
 
-            args = [
-                executable,
-                str(Path("src/dotlocalslashbin.py").absolute()),
-                f"--output={output}",
-                f"--cache={cache}",
-                f"--input={_input}",
-            ]
-            run(args, check=True, capture_output=True)
+            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
+            silent(args)
 
             self.assertEqual(output.joinpath("a").read_text(), "hello world")
 
@@ -232,14 +224,8 @@ class TestInputs(unittest.TestCase):
                 '[a]\nurl = "https://example.com/a.zip"\nignore = ["b"]\n',
             )
 
-            args = [
-                executable,
-                str(Path("src/dotlocalslashbin.py").absolute()),
-                f"--output={output}",
-                f"--cache={cache}",
-                f"--input={_input}",
-            ]
-            run(args, check=True, capture_output=True)
+            args = [f"--output={output}", f"--cache={cache}", f"--input={_input}"]
+            silent(args)
 
             self.assertEqual(output.joinpath("a").read_text(), "hello world")
             self.assertFalse(output.joinpath("b").exists(), "b should not exist")

@@ -58,9 +58,9 @@ class Item:
     ignore: set
 
 
-def main() -> int:
+def main(_args: list[str] | None = None) -> int:
     """Parse command line arguments and download each file."""
-    args = _parse_args()
+    args = _parse_args(_args)
 
     if args.clear:
         for path in args.cache.expanduser().iterdir():
@@ -129,7 +129,7 @@ def _process(item: Item) -> None:
         item.target.chmod(item.target.stat().st_mode | S_IEXEC)
 
 
-def _parse_args() -> _CustomNamespace:
+def _parse_args(args: list[str] | None) -> _CustomNamespace:
     parser = ArgumentParser(
         prog=Path(__file__).name,
         epilog="¹ --input can be specified multiple times",
@@ -143,7 +143,7 @@ def _parse_args() -> _CustomNamespace:
     parser.add_argument("--cache", default=_CACHE, help=help_, type=Path)
     help_ = "Clear the cache directory first (default: --no-clear)"
     parser.add_argument("--clear", action=BooleanOptionalAction, help=help_)
-    result = parser.parse_args(namespace=_CustomNamespace())
+    result = parser.parse_args(args, namespace=_CustomNamespace())
     if not result.input:
         result.input = [Path(_INPUT)]
     return result
