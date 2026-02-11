@@ -238,6 +238,23 @@ class TestZip(unittest.TestCase):
                 self.assertEqual(output.joinpath("a").read_text(), "hello world")
                 self.assertEqual(sum(1 for _ in output.iterdir()), 1)
 
+    def test_prefix_and_ignore(self) -> None:
+        """Process an input that uses the prefix and ignore features together."""
+        with _directory("source_") as source, _directory("cache_") as cache:
+            (b := source / "b").mkdir()
+            a = b / "a"
+            a.write_text("hello world")
+            c = b / "ignored"
+            c.write_text("hello world")
+
+            _write_zip(cache / "b.zip", [a, c], source)
+            toml = '[a]\nurl = "https://example.com/b.zip"\n'
+            toml += 'ignore = ["b/ignored"]\nprefix = "b/"\n'
+
+            with call(toml, cache) as output:
+                self.assertEqual(output.joinpath("a").read_text(), "hello world")
+                self.assertEqual(sum(1 for _ in output.iterdir()), 1)
+
     def test_name_is_not_a_file(self) -> None:
         """Process an input with a name that doesn't match a file."""
         with _directory("source_") as source, _directory("cache_") as cache:
