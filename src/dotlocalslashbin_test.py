@@ -7,13 +7,13 @@
 import contextlib
 import os
 import unittest
-import zipfile
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from subprocess import run
 from sys import executable
 from tempfile import TemporaryDirectory
+from zipfile import ZipFile
 
 from dotlocalslashbin import main
 
@@ -133,6 +133,21 @@ def call(toml: str, cache: Path) -> Iterator[Path]:
         yield output
 
 
+def _write_zip(
+    target: Path,
+    contents: list[Path],
+    relative_to: Path | None = None,
+) -> None:
+    """Write contents to target.
+
+    Assumes all files are at the root level, if relative_to is None.
+    """
+    with ZipFile(target, "w") as _zip:
+        for i in contents:
+            arcname = str(i.relative_to(relative_to)) if relative_to else i.name
+            _zip.write(i, arcname=arcname)
+
+
 class TestZip(unittest.TestCase):
     """Test the main function when input is a single zip file."""
 
@@ -142,10 +157,7 @@ class TestZip(unittest.TestCase):
             a = source / "a"
             a.write_text("hello world")
 
-            zip_path = cache / "a.zip"
-            with zipfile.ZipFile(zip_path, "w") as _zip:
-                _zip.write(a, arcname=a.name)
-
+            _write_zip(cache / "a.zip", [a])
             toml = '[a]\nurl = "https://example.com/a.zip"\n'
 
             with call(toml, cache) as output:
@@ -158,7 +170,7 @@ class TestZip(unittest.TestCase):
             a.write_text("hello world")
 
             zip_path = cache / "a.zip"
-            with zipfile.ZipFile(zip_path, "w") as _zip:
+            with ZipFile(zip_path, "w") as _zip:
                 _zip.writestr("b/", "")
                 _zip.write(a, arcname="b/" + a.name)
 
@@ -175,11 +187,7 @@ class TestZip(unittest.TestCase):
             b = source / "b"
             b.write_text("hello world")
 
-            zip_path = cache / "a.zip"
-            with zipfile.ZipFile(zip_path, "w") as _zip:
-                _zip.write(a, arcname=a.name)
-                _zip.write(b, arcname=b.name)
-
+            _write_zip(cache / "a.zip", [a, b])
             toml = '[a]\nurl = "https://example.com/a.zip"\n'
 
             with call(toml, cache) as output:
@@ -189,13 +197,11 @@ class TestZip(unittest.TestCase):
     def test_prefix_no_trailing_slash(self) -> None:
         """Process a zip file with a prefix with no trailing slash."""
         with _directory("source_") as source, _directory("cache_") as cache:
-            a = source / "a"
+            (b := source / "b").mkdir()
+            a = b / "a"
             a.write_text("hello world")
 
-            zip_path = cache / "a.zip"
-            with zipfile.ZipFile(zip_path, "w") as _zip:
-                _zip.write(a, arcname="b/" + a.name)
-
+            _write_zip(cache / "a.zip", [a], source)
             toml = '[a]\nurl = "https://example.com/a.zip"\nprefix = "b"\n'
 
             with call(toml, cache) as output:
@@ -204,16 +210,13 @@ class TestZip(unittest.TestCase):
     def test_file_outside_prefix(self) -> None:
         """Process a zip with a file outside the prefix."""
         with _directory("source_") as source, _directory("cache_") as cache:
-            a = source / "a"
+            (b := source / "b").mkdir()
+            a = b / "a"
             a.write_text("hello world")
             c = source / "c"
             c.write_text("hello world")
 
-            zip_path = cache / "a.zip"
-            with zipfile.ZipFile(zip_path, "w") as _zip:
-                _zip.write(a, arcname="b/" + a.name)
-                _zip.write(c, arcname=c.name)
-
+            _write_zip(cache / "a.zip", [a, c], source)
             toml = '[a]\nurl = "https://example.com/a.zip"\nprefix = "b"\n'
 
             with call(toml, cache) as output:
@@ -228,11 +231,7 @@ class TestZip(unittest.TestCase):
             b = source / "b"
             b.write_text("hello world")
 
-            zip_path = cache / "a.zip"
-            with zipfile.ZipFile(zip_path, "w") as _zip:
-                _zip.write(a, arcname=a.name)
-                _zip.write(b, arcname=b.name)
-
+            _write_zip(cache / "a.zip", [a, b])
             toml = '[a]\nurl = "https://example.com/a.zip"\nignore = ["b"]\n'
 
             with call(toml, cache) as output:
@@ -245,10 +244,7 @@ class TestZip(unittest.TestCase):
             a = source / "a"
             a.write_text("hello world")
 
-            zip_path = cache / "a.zip"
-            with zipfile.ZipFile(zip_path, "w") as _zip:
-                _zip.write(a, arcname=a.name)
-
+            _write_zip(cache / "a.zip", [a])
             toml = '[b]\nurl = "https://example.com/a.zip"\n'
 
             with call(toml, cache) as output:
