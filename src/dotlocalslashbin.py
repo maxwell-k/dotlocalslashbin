@@ -178,11 +178,12 @@ def _many_files(item: Item) -> None:
 
     These two actions should respect 'ignore' and 'prefix' similarly.
     """
+    ignored = [item.prefix + i for i in item.ignore]
 
     def _should_continue(filename: str) -> bool:
         return any(
             [
-                filename in item.ignore,
+                filename in ignored,
                 filename == item.prefix,
                 item.prefix != "" and not filename.startswith(item.prefix),
             ],
