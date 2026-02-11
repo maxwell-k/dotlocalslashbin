@@ -249,7 +249,7 @@ class TestZip(unittest.TestCase):
 
             _write_zip(cache / "b.zip", [a, c], source)
             toml = '[a]\nurl = "https://example.com/b.zip"\n'
-            toml += 'ignore = ["b/ignored"]\nprefix = "b/"\n'
+            toml += 'ignore = ["ignored"]\nprefix = "b/"\n'
 
             with call(toml, cache) as output:
                 self.assertEqual(output.joinpath("a").read_text(), "hello world")
