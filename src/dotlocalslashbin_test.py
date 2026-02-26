@@ -288,6 +288,23 @@ class TestTar(unittest.TestCase):
             with call(toml, cache) as output:
                 self.assertEqual(sum(1 for _ in output.iterdir()), 1)
 
+    def test_ignore(self) -> None:
+        """Process a tar with one ignored file in at an absolute path."""
+        with _directory("source_") as source, _directory("cache_") as cache:
+            a = source / "a"
+            a.write_text("hello world")
+
+            tar_path = cache / "a.tar.gz"
+            with TarFile.open(tar_path, "w:gz") as tar:
+                tar.add(a, arcname="b/a")
+
+            toml = '[a]\nurl = "https://example.com/a.tar.gz"\n'
+            toml += 'prefix = "b"\n'
+            toml += 'ignore = ["a"]\n'
+
+            with call(toml, cache) as output:
+                self.assertEqual(sum(1 for _ in output.iterdir()), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
