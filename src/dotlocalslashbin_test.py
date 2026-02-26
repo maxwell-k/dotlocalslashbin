@@ -12,6 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from subprocess import run
 from sys import executable
+from tarfile import TarFile
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
@@ -266,6 +267,25 @@ class TestZip(unittest.TestCase):
 
             with call(toml, cache) as output:
                 self.assertEqual(output.joinpath("a").read_text(), "hello world")
+                self.assertEqual(sum(1 for _ in output.iterdir()), 1)
+
+
+class TestTar(unittest.TestCase):
+    """Test the main function when input is a single tar.gz file."""
+
+    def test_basic(self) -> None:
+        """Process a tar with one file in at an absolute path."""
+        with _directory("source_") as source, _directory("cache_") as cache:
+            a = source / "a"
+            a.write_text("hello world")
+
+            tar_path = cache / "a.tar.gz"
+            with TarFile.open(tar_path, "w:gz") as tar:
+                tar.add(a)
+
+            toml = '[a]\nurl = "https://example.com/a.tar.gz"\n'
+
+            with call(toml, cache) as output:
                 self.assertEqual(sum(1 for _ in output.iterdir()), 1)
 
 
