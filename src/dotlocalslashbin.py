@@ -97,18 +97,23 @@ def main(_args: list[str] | None = None) -> int:
             print(f"Error {e.code} downloading {e.url}")
             return 1
 
-        arg0 = str(item.target.absolute())
-        prompt = "#" if item.version else "$"
-        if item.target.exists():
-            print(" ".join((prompt, arg0.replace(_HOME, "~"), item.version)))
-        else:
-            destination = str(item.target.parent).replace(_HOME, "~")
-            print(f"$ {destination} now contains {item.name}")
-        if item.version:
-            run([arg0, *split(item.version)], check=True)
-        print()
+        _display(item)
 
     return 0
+
+
+def _display(item: Item) -> None:
+    """Display the result of processing an item."""
+    arg0 = str(item.target.absolute())
+    prompt = "#" if item.version else "$"
+    if item.target.exists():
+        print(" ".join((prompt, arg0.replace(_HOME, "~"), item.version)))
+    else:
+        destination = str(item.target.parent).replace(_HOME, "~")
+        print(f"$ {destination} now contains {item.name}")
+    if item.version:
+        run([arg0, *split(item.version)], check=True)
+    print()
 
 
 def _process(item: Item) -> None:
