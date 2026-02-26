@@ -80,6 +80,8 @@ def main(_args: list[str] | None = None) -> int:
         item.expected = record.get("expected", None)
         item.version = record.get("version", "")
         item.prefix = record.get("prefix", "")
+        if item.prefix and item.prefix[-1] != "/":
+            item.prefix += "/"
         item.command = record.get("command", None)
 
         if "action" in record:
