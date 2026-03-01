@@ -54,6 +54,6 @@ jobs:
           msg = FORMAT.format(line.removeprefix(START).removesuffix(END))
           OUTPUT.write_text(msg)
       # yamllint disable-line rule:line-length
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with: { path: dist }
       - uses: dprint/check@9cb3a2b17a8e606d37aae341e49df3654933fc23 # v2.3
