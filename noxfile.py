@@ -52,7 +52,7 @@ def static(session: Session) -> None:
     session.run(
         "npm",
         "exec",
-        "pyright@1.1.410",
+        "pyright@1.1.411",
         "--yes",
         "--",
         f"--pythonpath={PYTHON}",
