@@ -31,3 +31,12 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         # https://github.com/pypa/gh-action-pypi-publish/blob/release/v1/action.yml
         with: { print-hash: true }
+  zizmor:
+    runs-on: ubuntu-26.04
+    # https://github.com/zizmorcore/zizmor-action#permissions
+    permissions: { security-events: write }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { persist-credentials: false }
+      # yamllint disable-line rule:line-length
+      - uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
