@@ -11,7 +11,7 @@ on: # yamllint disable-line rule:truthy
 
 jobs:
   nox:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs: { version: "${{ steps.version.outputs.version }}" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
