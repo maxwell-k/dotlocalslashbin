@@ -6,7 +6,7 @@ build-backend = "flit_core.buildapi"
 name = "dotlocalslashbin"
 authors = [{ name = "Keith Maxwell", email = "keith.maxwell@gmail.com" }]
 readme = "README.md"
-dynamic = ["version", "description"]
+dynamic = ["version", "description"] # see src/dotlocalslashbin.py
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
